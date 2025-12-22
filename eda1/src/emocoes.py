@@ -11,7 +11,7 @@ from scipy.spatial.distance import euclidean
 st.title("🎭 Análise de emoções nos hinos")
 
 hinos_analise: pd.DataFrame = hinos_processados()
-_, _, similarity_emocoes = similarity_matrices()
+_, _, _, similarity_emocoes = similarity_matrices()
 
 # modelo usado: https://huggingface.co/pysentimiento/bert-pt-emotion
 """

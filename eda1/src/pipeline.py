@@ -47,6 +47,10 @@ def load_data() -> pd.DataFrame:
 
 @st.cache_data
 def similarity_matrices():
+    similarity_titles = pd.read_pickle(
+        Path(__file__).parent.parent / "assets" / "similarity_matrix_titles.pkl"
+    )
+
     similarity_word = pd.read_pickle(
         Path(__file__).parent.parent
         / "assets"
@@ -60,4 +64,4 @@ def similarity_matrices():
     similarity_emocoes = pd.read_pickle(
         Path(__file__).parent.parent / "assets" / "similarity_matrix_emocoes.pkl"
     )
-    return similarity_word, similarity_sent, similarity_emocoes
+    return similarity_titles, similarity_word, similarity_sent, similarity_emocoes

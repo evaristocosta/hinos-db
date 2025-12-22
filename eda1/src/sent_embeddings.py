@@ -17,7 +17,7 @@ comparações e análises mais profundas.
 hinos_analise: pd.DataFrame = hinos_processados()
 hinos_analise["sent_cluster"] = hinos_analise["sent_cluster"].astype("category")
 hinos_analise["BERT_topic"] = hinos_analise["BERT_topic"].astype("category")
-_, similarity_sentence, _ = similarity_matrices()
+_, _, similarity_sentence, _ = similarity_matrices()
 
 st.sidebar.header("Filtros")
 categorias_unicas = hinos_analise["categoria_abr"].unique()

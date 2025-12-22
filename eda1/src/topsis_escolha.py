@@ -8,7 +8,9 @@ from topsis_hamedbaziyad import TOPSIS
 
 st.title("✅ Seleção de similares")
 hinos_analise: pd.DataFrame = hinos_processados()
-similarity_word, similarity_sent, similarity_emocoes = similarity_matrices()
+similarity_titles, similarity_word, similarity_sent, similarity_emocoes = (
+    similarity_matrices()
+)
 
 """
 Nesta seção, utilizamos o método TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution) para 

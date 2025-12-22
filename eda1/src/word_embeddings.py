@@ -20,7 +20,7 @@ hinos_analise: pd.DataFrame = hinos_processados()
 hinos_analise["word_cluster"] = hinos_analise["word_cluster"].astype("category")
 hinos_analise["NMF_topic"] = hinos_analise["NMF_topic"].astype("category")
 # hinos_analise = hinos_analise.rename_axis("Nº")
-similarity_word, _, _ = similarity_matrices()
+_, similarity_word, _, _ = similarity_matrices()
 
 st.sidebar.header("Filtros")
 categorias_unicas = hinos_analise["categoria_abr"].unique()
