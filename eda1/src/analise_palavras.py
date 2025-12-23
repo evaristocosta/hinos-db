@@ -1,7 +1,7 @@
 import streamlit as st
 import nltk
 import pandas as pd
-from src.pipeline import hinos_processados
+from src.loader import hinos_processados
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity

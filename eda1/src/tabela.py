@@ -1,5 +1,5 @@
 import streamlit as st
-from src.pipeline import load_data
+from src.loader import load_data
 
 hinos = load_data()
 

@@ -1,6 +1,6 @@
 import streamlit as st
 import altair as alt
-from src.pipeline import hinos_processados
+from src.loader import hinos_processados
 
 hinos = hinos_processados()
 hinos["numero"] = hinos.index

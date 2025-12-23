@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from src.pipeline import hinos_processados, similarity_matrices
+from src.loader import hinos_processados, similarity_matrices
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go

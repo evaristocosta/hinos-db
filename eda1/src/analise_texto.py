@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import altair as alt
-from src.pipeline import hinos_processados
+from src.loader import hinos_processados
 
 st.title("🔡 Exploração de palavras")
 """

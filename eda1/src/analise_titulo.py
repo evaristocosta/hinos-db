@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import numpy as np
-from src.pipeline import hinos_processados, similarity_matrices
+from src.loader import hinos_processados, similarity_matrices
 
 hinos: pd.DataFrame = hinos_processados()
 similarity_titles, _, _, _ = similarity_matrices()

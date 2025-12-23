@@ -3,15 +3,9 @@ from sqlalchemy import create_engine
 import pandas as pd
 from pathlib import Path
 
-# import nltk
-
-# nltk.download("stopwords")
-
 
 @st.cache_data
 def hinos_processados() -> pd.DataFrame:
-    # hinos = load_data()
-    # hinos = preprocessing(hinos)
     pkl_path = Path(__file__).parent.parent / "assets" / "hinos_analise_emocoes.pkl"
     hinos_processados = pd.read_pickle(pkl_path)
 
