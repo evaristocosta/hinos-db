@@ -39,9 +39,10 @@ presets = {
         "NMF_topic": 80,
         "sent_cluster": 70,
         "BERT_topic": 60,
-        "sim_word": 50,
-        "sim_sent": 40,
-        "sim_emocao": 30,
+        "sim_title": 50,
+        "sim_word": 40,
+        "sim_sent": 30,
+        "sim_emocao": 20,
     },
     "Por Categoria": {
         "categoria_id": 100,
@@ -49,6 +50,7 @@ presets = {
         "NMF_topic": 20,
         "sent_cluster": 20,
         "BERT_topic": 20,
+        "sim_title": 10,
         "sim_word": 10,
         "sim_sent": 10,
         "sim_emocao": 10,
@@ -59,6 +61,7 @@ presets = {
         "NMF_topic": 30,
         "sent_cluster": 100,
         "BERT_topic": 100,
+        "sim_title": 90,
         "sim_word": 90,
         "sim_sent": 90,
         "sim_emocao": 20,
@@ -69,6 +72,7 @@ presets = {
         "NMF_topic": 20,
         "sent_cluster": 30,
         "BERT_topic": 30,
+        "sim_title": 30,
         "sim_word": 30,
         "sim_sent": 30,
         "sim_emocao": 100,
@@ -79,6 +83,7 @@ presets = {
         "NMF_topic": 50,
         "sent_cluster": 50,
         "BERT_topic": 50,
+        "sim_title": 50,
         "sim_word": 50,
         "sim_sent": 50,
         "sim_emocao": 50,
@@ -100,6 +105,7 @@ categories = [
     "NMF_topic",
     "sent_cluster",
     "BERT_topic",
+    "sim_title",
     "sim_word",
     "sim_sent",
     "sim_emocao",
@@ -112,11 +118,11 @@ categories = [
     NMF_topic_weight,
     sent_cluster_weight,
     BERT_topic_weight,
+    sim_title_weight,
     sim_word_weight,
     sim_sent_weight,
     sim_emocao_weight,
-) = (0, 0, 0, 0, 0, 0, 0, 0)
-
+) = (0, 0, 0, 0, 0, 0, 0, 0, 0)
 col_widths = [3, 1]
 
 with st.container():
@@ -135,6 +141,24 @@ with st.container():
             key="categoria_id",
         )
 
+
+with st.container():
+    col_left, col_right = st.columns(col_widths)
+    with col_left:
+        st.markdown("#### Similaridade de títulos")
+        st.write(
+            "Avalia a similaridade entre títulos dos hinos usando *token set ratio*."
+        )
+    with col_right:
+        sim_title_weight = col_right.slider(
+            label="Similaridade de títulos",
+            label_visibility="hidden",
+            min_value=0,
+            max_value=100,
+            value=50,
+            step=1,
+            key="sim_title",
+        )
 
 with st.container():
     col_left, col_right = st.columns(col_widths)
@@ -270,6 +294,7 @@ weights = [
     NMF_topic_weight,
     sent_cluster_weight,
     BERT_topic_weight,
+    sim_title_weight,
     sim_word_weight,
     sim_sent_weight,
     sim_emocao_weight,
@@ -330,6 +355,9 @@ hinos_restantes = hinos_restantes[
     ]
 ]
 
+similarity_matrix_titles_sample = similarity_titles.loc[
+    hino_sample.name, hinos_restantes.index
+]
 similarity_matrix_words_sample = similarity_word.loc[
     hino_sample.name, hinos_restantes.index
 ]
@@ -339,6 +367,7 @@ similarity_matrix_sent_sample = similarity_sent.loc[
 similarity_matrix_emocoes_sample = similarity_emocoes.loc[
     hino_sample.name, hinos_restantes.index
 ]
+hinos_restantes["sim_title"] = similarity_matrix_titles_sample.values
 hinos_restantes["sim_word"] = similarity_matrix_words_sample.values
 hinos_restantes["sim_sent"] = similarity_matrix_sent_sample.values
 hinos_restantes["sim_emocao"] = similarity_matrix_emocoes_sample.values
@@ -375,7 +404,7 @@ if sum(weights) != 1:
     )
     st.stop()
 
-profit_cost = [1, 1, 1, 1, 1, 1, 1, 1]
+profit_cost = [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
 
 # executa TOPSIS apenas após validações
@@ -386,7 +415,6 @@ X = X.apply(pd.to_numeric, errors="coerce").fillna(0)
 
 # valida consistência de dimensões com os vetores de peso e profit_cost
 if X.shape[1] != len(weights) or X.shape[1] != len(profit_cost):
-    print("nem entrou")
     st.error(
         f"Número de critérios ({X.shape[1]}) diferente do tamanho de weights ({len(weights)}) "
         f"ou profit_cost ({len(profit_cost)}). Ajuste antes de prosseguir."
@@ -410,7 +438,6 @@ st.dataframe(
     width="stretch",
     column_config={
         "nome": st.column_config.TextColumn("Nome"),
-        # "texto_limpo": st.column_config.TextColumn("Texto", width="medium"),
         "topsis_score": st.column_config.NumberColumn(
             "TOPSIS Score",
             format="%.2f",
