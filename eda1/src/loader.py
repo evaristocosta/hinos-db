@@ -5,14 +5,6 @@ from pathlib import Path
 
 
 @st.cache_data
-def hinos_processados() -> pd.DataFrame:
-    pkl_path = Path(__file__).parent.parent / "assets" / "hinos_analise_emocoes.pkl"
-    hinos_processados = pd.read_pickle(pkl_path)
-
-    return hinos_processados
-
-
-@st.cache_data
 def load_data() -> pd.DataFrame:
     database_path = Path(__file__).parent.parent / "assets" / "database.db"
     engine = create_engine(f"sqlite:///{database_path}")
@@ -37,6 +29,22 @@ def load_data() -> pd.DataFrame:
 
     hinos_analise = pd.read_sql_query(sql_query, connection)
     return hinos_analise
+
+
+@st.cache_data
+def hinos_processados() -> pd.DataFrame:
+    pkl_path = Path(__file__).parent.parent / "assets" / "hinos_analise_final.pkl"
+    hinos_processados = pd.read_pickle(pkl_path)
+    hinos_processados = hinos_processados.query("coletanea_id == 1").drop(columns=["coletanea_id"])
+    return hinos_processados
+
+
+@st.cache_data
+def _hinos_processados_legado() -> pd.DataFrame:
+    pkl_path = Path(__file__).parent.parent / "assets" / "hinos_analise_emocoes.pkl"
+    hinos_processados = pd.read_pickle(pkl_path)
+
+    return hinos_processados
 
 
 @st.cache_data
