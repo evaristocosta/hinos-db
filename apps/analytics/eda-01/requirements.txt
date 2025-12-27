@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+plotly
+altair
+scikit-learn
+scipy
+sqlalchemy
+nltk
+topsis-hamedbaziyad
+wordcloud

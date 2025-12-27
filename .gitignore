@@ -216,8 +216,8 @@ pip-selfcheck.json
 
 ###
 *.pptx
-etl_slides/slides*/*
-!eda1/assets/database.db
-pesquisadorHinos/*
+!apps/analytics/eda-01/assets/database.db
+apps/etl-similarity/assets/*
+!apps/etl-similarity/assets/stopwords-br.txt
 cc.*.bin
 cc.*.bin.gz

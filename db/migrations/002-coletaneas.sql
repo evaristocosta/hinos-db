@@ -1,6 +1,0 @@
-INSERT INTO coletanea (nome, descricao, arquivo) VALUES ('COLETÂNEA DE LOUVORES - IGREJA CRISTÃ MARANATA - EDIÇÃO 2018', 'ATUALIZAÇÃO  21.08.2022. Origem: slides', '01.COLETÂNEA_IGREJAS_2022_TV-16.9.pptx');
-INSERT INTO coletanea (nome, descricao, arquivo) VALUES ('COLETÂNEA DE CRIANÇAS - IGREJA CRISTÃ MARANATA - EDIÇÃO 2019', 'ATUALIZAÇÃO  11.07.2021. Origem: slides', '03.COLETÂNEA DE CIAS_2021 TV.pptx');
-INSERT INTO coletanea (nome, descricao, arquivo) VALUES ('Louvores Avulsos de Crianças, Intermediários e Adolescentes - Edição 2022', 'Origem: slides', 'Louvores Avulsos CIAs 2022 - COM ANIMAÇÃO.pptx');
-INSERT INTO coletanea (nome, descricao, arquivo) VALUES ('LOUVORES AVULSOS', 'REV 31.12.22. Origem: slides', 'LOUVORES AVULSOS_Rev_31.12.22.pptx');
-INSERT INTO coletanea (nome, descricao, arquivo) VALUES ('LOUVORES AVULSOS - MANUAL', '20250838. Origem: extração de listagem de arquivos do drive do Departamento de Louvor', '');
-INSERT INTO coletanea (nome, descricao, arquivo) VALUES ('LOUVORES AVULSOS CIAS - MANUAL', '20250838. Origem: extração de listagem de arquivos do drive do Departamento de Louvor', '');
