@@ -15,8 +15,10 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 # Diretório de assets
 # Observação: os assets (stopwords, saídas de similaridade, etc.)
-# ficam por padrão em eda1/assets dentro do projeto.
-ASSETS_DIR = PROJECT_ROOT / "eda1" / "assets"
+# ficam por padrão em etl-similarity/assets dentro do projeto.
+ASSETS_DIR = PROJECT_ROOT / "apps" / "etl-similarity" / "assets"
+SHARED_DIR = PROJECT_ROOT / "apps" / "shared"
+DATABASE_PATH = PROJECT_ROOT / "database" / "database.db"
 
 # Caminho do modelo FastText
 FASTTEXT_MODEL_NAME = "cc.pt.300.bin"

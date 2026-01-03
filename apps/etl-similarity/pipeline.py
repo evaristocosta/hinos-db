@@ -10,7 +10,9 @@ import config
 from utils import setup_logger, PipelineTracker
 
 
-def pipeline(assets_folder: Path, coletanea_id: int | None = None, log_level: int = logging.INFO) -> None:
+def pipeline(
+    assets_folder: Path, coletanea_id: int | None = None, log_level: int = logging.INFO
+) -> None:
     """Run the full ETL pipeline sequentially with logging and tracking."""
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -56,7 +58,8 @@ def pipeline(assets_folder: Path, coletanea_id: int | None = None, log_level: in
     tracker.start(step)
     logger.info("[process_tokens] Processing tokens...")
     try:
-        hinos_tokens = processes.process_tokens(hinos_extract, assets_folder)
+        stopwords_path = config.SHARED_DIR / "assets"
+        hinos_tokens = processes.process_tokens(hinos_extract, stopwords_path)
         tracker.end(step, success=True, extra={"rows": len(hinos_tokens)})
         logger.info("[process_tokens] Tokens processed.")
     except Exception as e:
@@ -95,7 +98,7 @@ def pipeline(assets_folder: Path, coletanea_id: int | None = None, log_level: in
     tracker.start(step)
     logger.info("[process_word_embeddings] Computing word embeddings...")
     try:
-        model_path = assets_folder / config.FASTTEXT_MODEL_NAME
+        model_path = config.SHARED_DIR / "models" / config.FASTTEXT_MODEL_NAME
         hinos_word_emb = processes.process_word_embeddings(hinos_ngrams, model_path)
         tracker.end(step, success=True, extra={"rows": len(hinos_word_emb)})
         logger.info("[process_word_embeddings] Word embeddings computed.")
@@ -106,7 +109,9 @@ def pipeline(assets_folder: Path, coletanea_id: int | None = None, log_level: in
 
     step = "similarity_word_embeddings"
     tracker.start(step)
-    logger.info("[similarity_word_embeddings] Calculating word embedding similarities...")
+    logger.info(
+        "[similarity_word_embeddings] Calculating word embedding similarities..."
+    )
     try:
         similarities.similarity_word_embeddings(hinos_word_emb, assets_folder)
         artifact = assets_folder / "similarity_matrix_word_embeddings.pkl"
@@ -134,12 +139,16 @@ def pipeline(assets_folder: Path, coletanea_id: int | None = None, log_level: in
 
     step = "similarity_sentence_embeddings"
     tracker.start(step)
-    logger.info("[similarity_sentence_embeddings] Calculating sentence embedding similarities...")
+    logger.info(
+        "[similarity_sentence_embeddings] Calculating sentence embedding similarities..."
+    )
     try:
         similarities.similarity_sentence_embeddings(hinos_sent_emb, assets_folder)
         artifact = assets_folder / "similarity_matrix_sentence_embeddings.pkl"
         tracker.end(step, success=True, extra={"artifact": str(artifact)})
-        logger.info("[similarity_sentence_embeddings] Sentence embedding similarity saved.")
+        logger.info(
+            "[similarity_sentence_embeddings] Sentence embedding similarity saved."
+        )
     except Exception as e:
         tracker.fail(step, str(e))
         logger.exception("[similarity_sentence_embeddings] Failed.")

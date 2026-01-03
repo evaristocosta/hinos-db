@@ -1,17 +1,18 @@
 from sqlalchemy import create_engine
+import config
 import pandas as pd
 
 
 def extract(coletanea_id: int | None = None) -> pd.DataFrame:
     # Cria engine para acessar o banco de dados local (assets/database.db)
-    engine = create_engine("sqlite:///../../database/database.db")
+    engine = create_engine(f"sqlite:///{config.DATABASE_PATH}")
     connection = engine.connect()
 
     # Monta a query para buscar hinos e suas categorias
     where_clause = ""
     if coletanea_id is not None:
         where_clause = f"where coletanea_id = {coletanea_id}"
-    
+
     sql_query = f"""
     select
         numero,
