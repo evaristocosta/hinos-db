@@ -217,6 +217,7 @@ pip-selfcheck.json
 ###
 *.pptx
 !apps/analytics/eda-01/assets/database.db
+!database/database.db
 apps/etl-similarity/assets/*
 !apps/etl-similarity/assets/stopwords-br.txt
 cc.*.bin
