@@ -31,10 +31,10 @@ HF_EMBED_MODEL = "nomic-ai/nomic-embed-text-v1"
 HF_LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 # Configurações de busca
-MAX_RESULTS = 10
-VECTOR_SEARCH_K = 8
-VECTOR_FETCH_K = 20
-BM25_K = 8
+MAX_RESULTS = 15
+VECTOR_SEARCH_K = 10
+VECTOR_FETCH_K = 25
+BM25_K = 10
 
 # Categorias e coletâneas (mantidas para compatibilidade)
 CATEGORIAS = [

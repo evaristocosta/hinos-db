@@ -13,7 +13,7 @@ from rag_hf import HymnRAG
 
 # Configuração da página
 st.set_page_config(
-    page_title="Busca de Hinos - RAG",
+    page_title="Busca Inteligente de Hinos",
     page_icon="🎵",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -26,7 +26,7 @@ st.markdown(
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
-        color: #1f77b4;
+        color: #818d3f;
         text-align: center;
         margin-bottom: 1rem;
     }
@@ -37,7 +37,7 @@ st.markdown(
     }
     .stButton>button {
         width: 100%;
-        background-color: #1f77b4;
+        background-color: #818d3f;
         color: white;
     }
     .hymn-result {
@@ -45,6 +45,12 @@ st.markdown(
         padding: 1rem;
         border-radius: 0.5rem;
         margin-bottom: 1rem;
+    }
+    div[data-testid="InputInstructions"] > span:nth-child(1) {
+        visibility: hidden;
+    }
+    div[data-testid="stVerticalBlock"] {
+        justify-content: end;
     }
 </style>
 """,
@@ -57,17 +63,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="sub-header">Sistema RAG para consulta na Coletânea de Hinos</div>',
+    '<div class="sub-header">Sistema para consulta de hinos da Coletânea</div>',
     unsafe_allow_html=True,
 )
 
 
 # Inicialização do sistema RAG
-@st.cache_resource(show_spinner="Carregando sistema RAG...")
+@st.cache_resource(show_spinner="Carregando sistema...")
 def load_rag():
     """Carrega o sistema RAG uma única vez"""
     try:
-        return HymnRAG(verbose=True)
+        return HymnRAG(verbose=False)
     except Exception as e:
         st.error(f"❌ Erro ao inicializar o sistema: {str(e)}")
         st.stop()
@@ -77,21 +83,18 @@ rag = load_rag()
 
 # Sidebar - Filtros
 with st.sidebar:
-    st.header("⚙️ Configurações")
+    # st.header("Configurações")
 
     st.subheader("🔍 Filtros")
 
     # Checkbox para habilitar filtros automáticos
-    auto_filters = st.checkbox(
-        "Extrair filtros automaticamente da consulta",
-        value=False,
-        help="Detecta automaticamente categorias e coletâneas mencionadas na consulta",
-    )
+    # auto_filters = st.checkbox(
+    #     "Extrair filtros automaticamente da consulta",
+    #     value=False,
+    #     help="Detecta automaticamente categorias e coletâneas mencionadas na consulta",
+    # )
 
     # Filtros manuais
-    st.markdown("---")
-    st.markdown("**Filtros Manuais**")
-
     # Categorias
     categorias_disponiveis = list(rag.categorias.keys())
     categorias_selecionadas = st.multiselect(
@@ -109,17 +112,17 @@ with st.sidebar:
     )
 
     # Informações
-    st.markdown("---")
-    st.subheader("ℹ️ Sobre")
-    st.info(
-        f"""
-    **Total de hinos:** {rag.total_hinos}
-    
-    **Categorias:** {len(rag.categorias)}
-    
-    **Coletâneas:** {len(rag.coletaneas)}
-    """
-    )
+    # st.markdown("---")
+    # st.subheader("ℹ️ Sobre")
+    # st.info(
+    #     f"""
+    # **Total de hinos:** {rag.total_hinos}
+
+    # **Categorias:** {len(rag.categorias)}
+
+    # **Coletâneas:** {len(rag.coletaneas)}
+    # """
+    # )
 
     # Exemplos
     st.markdown("---")
@@ -165,7 +168,7 @@ if search_button:
                 # Executa a consulta e obtém docs e generator
                 docs, response_stream = rag.query_stream(
                     question=query,
-                    auto_filters=auto_filters,
+                    auto_filters=False,
                     manual_categorias=manual_categorias,
                     manual_coletaneas=manual_coletaneas,
                 )
@@ -180,24 +183,60 @@ if search_button:
 
                 # Expander com hinos encontrados
                 if docs:
-                    with st.expander(f"🎵 Hinos Encontrados ({len(docs)})"):
-                        for doc in docs:
+                    with st.expander(f"🎵 Todos os hinos relacionados ({len(docs)})"):
+                        st.write("A busca retornou os hinos da resposta, e mais estes:")
+                        for i, doc in enumerate(docs, start=1):
                             numero = doc.metadata.get("numero", "N/A")
+                            if numero == "null":
+                                numero = "N/A"
                             nome = doc.metadata.get("nome", "Sem título")
-                            categoria = doc.metadata.get("categoria", "")
-                            coletanea = doc.metadata.get("coletanea", "")
+                            categoria_id = doc.metadata.get("categoria_id", None)
+                            coletanea_id = doc.metadata.get("coletanea_id", None)
 
-                            st.markdown(f"**- [{numero}] {nome}**")
+                            st.markdown(f"{i}. [{numero}] {nome}")
+
+                            # Tags coloridas lado a lado
+                            tags = []
+                            if categoria_id:
+                                # Busca a categoria pelo id (valor no dict)
+                                categoria_nome = next(
+                                    (
+                                        k
+                                        for k, v in rag.categorias.items()
+                                        if v == categoria_id
+                                    ),
+                                    "Desconhecida",
+                                )
+                                tags.append(
+                                    f'<span style="background-color: #e3f2fd; color: #1976d2; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; margin-right: 8px; display: inline-block;">{categoria_nome.title()}</span>'
+                                )
+
+                            if coletanea_id:
+                                # Busca a coletânea pelo id (valor no dict)
+                                coletanea_nome = next(
+                                    (
+                                        k
+                                        for k, v in rag.coletaneas.items()
+                                        if v == coletanea_id
+                                    ),
+                                    "Desconhecida",
+                                )
+                                tags.append(
+                                    f'<span style="background-color: #e8f5e9; color: #388e3c; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; margin-right: 8px; display: inline-block;">{coletanea_nome.title()}</span>'
+                                )
+
+                            if tags:
+                                st.markdown("".join(tags), unsafe_allow_html=True)
 
                 # Informação sobre filtros aplicados
-                if manual_categorias or manual_coletaneas or auto_filters:
+                if manual_categorias or manual_coletaneas:  # or auto_filters:
                     with st.expander("ℹ️ Filtros Aplicados"):
                         if manual_categorias:
                             st.write(f"**Categorias:** {', '.join(manual_categorias)}")
                         if manual_coletaneas:
                             st.write(f"**Coletâneas:** {', '.join(manual_coletaneas)}")
-                        if auto_filters:
-                            st.write("**Filtros automáticos:** Habilitados")
+                        # if auto_filters:
+                        #     st.write("**Filtros automáticos:** Habilitados")
 
             except Exception as e:
                 st.error(f"❌ Erro ao processar consulta: {str(e)}")
