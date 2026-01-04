@@ -221,5 +221,6 @@ pip-selfcheck.json
 apps/etl-similarity/assets/*
 !apps/etl-similarity/assets/stopwords-br.txt
 !apps/hymn-rag/assets/database.db
+!apps/hymn-rag/assets/vectorstore/chroma.sqlite3
 cc.*.bin
 cc.*.bin.gz
