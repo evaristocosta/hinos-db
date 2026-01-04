@@ -208,7 +208,7 @@ if search_button:
                                     "Desconhecida",
                                 )
                                 tags.append(
-                                    f'<span style="background-color: #e3f2fd; color: #1976d2; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; margin-right: 8px; display: inline-block;">{categoria_nome.title()}</span>'
+                                    f'<span style="background-color: #1565c0; color: #ffffff; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; margin-right: 8px; display: inline-block;">{categoria_nome.title()}</span>'
                                 )
 
                             if coletanea_id:
@@ -222,7 +222,7 @@ if search_button:
                                     "Desconhecida",
                                 )
                                 tags.append(
-                                    f'<span style="background-color: #e8f5e9; color: #388e3c; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; margin-right: 8px; display: inline-block;">{coletanea_nome.title()}</span>'
+                                    f'<span style="background-color: #212510; color: #ffffff; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; margin-right: 8px; display: inline-block;">{coletanea_nome.title()}</span>'
                                 )
 
                             if tags:

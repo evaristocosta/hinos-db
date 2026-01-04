@@ -323,10 +323,22 @@ class HymnRAG:
         # Obtém token da API Hugging Face
         load_dotenv()
 
-        self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
+        # Tenta obter o token do Streamlit secrets primeiro, depois do .env
+        self.hf_token = None
+        try:
+            import streamlit as st
+
+            if hasattr(st, "secrets"):
+                self.hf_token = st.secrets.get("HUGGINGFACE_API_TOKEN")
+        except:
+            pass
+
+        if not self.hf_token:
+            self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
+
         if not self.hf_token:
             print(
-                "⚠️ HUGGINGFACE_API_TOKEN não encontrado. Configure como variável de ambiente."
+                "⚠️ HUGGINGFACE_API_TOKEN não encontrado. Configure como variável de ambiente ou Streamlit secret."
             )
 
         # Inicializa InferenceClient
@@ -674,4 +686,4 @@ Contexto:
 Resposta: [/INST]"""
 
         # Retorna docs e o generator
-        return docs, self._call_hf_api_stream(prompt, max_tokens=512)
+        return docs, self._call_hf_api_stream(prompt, max_tokens=1024)
