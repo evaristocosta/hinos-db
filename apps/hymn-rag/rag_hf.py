@@ -304,11 +304,9 @@ class HymnRAG:
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
         self.db_path = self._locate_database()
-        self.vector_dir = Path.cwd().parent / "shared" / "rag" / "vectorstore"
-        self.chunks_cache = Path.cwd().parent / "shared" / "rag" / "chunks_cache.pkl"
-        self.stopwords_path = (
-            Path.cwd().parent / "shared" / "assets" / "stopwords-br.txt"
-        )
+        self.vector_dir = Path.cwd() / "assets" / "vectorstore"
+        self.chunks_cache = Path.cwd() / "assets" / "chunks_cache.pkl"
+        self.stopwords_path = Path.cwd() / "assets" / "stopwords-br.txt"
 
         # Carrega configurações do banco
         self._load_metadata()
@@ -358,6 +356,7 @@ class HymnRAG:
 
     def _locate_database(self) -> Path:
         candidates = [
+            Path.cwd() / "assets" / "database.db",
             Path.cwd() / "database" / "database.db",
             Path.cwd().parent / "database" / "database.db",
             Path.cwd().parent.parent / "database" / "database.db",

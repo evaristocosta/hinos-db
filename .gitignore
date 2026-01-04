@@ -220,5 +220,6 @@ pip-selfcheck.json
 !database/database.db
 apps/etl-similarity/assets/*
 !apps/etl-similarity/assets/stopwords-br.txt
+!apps/hymn-rag/assets/database.db
 cc.*.bin
 cc.*.bin.gz
