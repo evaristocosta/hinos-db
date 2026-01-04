@@ -148,7 +148,7 @@ with col2:
     search_button = st.button("🔍 Buscar", type="primary", use_container_width=True)
 
 # Área de resultados
-if search_button or query:
+if search_button:
     if not query:
         st.warning("⚠️ Por favor, digite uma consulta.")
     else:
@@ -162,8 +162,8 @@ if search_button or query:
                     coletaneas_selecionadas if coletaneas_selecionadas else None
                 )
 
-                # Executa a consulta
-                resultado = rag.query(
+                # Executa a consulta e obtém docs e generator
+                docs, response_stream = rag.query_stream(
                     question=query,
                     auto_filters=auto_filters,
                     manual_categorias=manual_categorias,
@@ -174,9 +174,20 @@ if search_button or query:
                 st.markdown("---")
                 st.subheader("📋 Resultado")
 
-                # Container para o resultado
+                # Container para o resultado com streaming
                 with st.container():
-                    st.markdown(resultado)
+                    st.write_stream(response_stream)
+
+                # Expander com hinos encontrados
+                if docs:
+                    with st.expander(f"🎵 Hinos Encontrados ({len(docs)})"):
+                        for doc in docs:
+                            numero = doc.metadata.get("numero", "N/A")
+                            nome = doc.metadata.get("nome", "Sem título")
+                            categoria = doc.metadata.get("categoria", "")
+                            coletanea = doc.metadata.get("coletanea", "")
+
+                            st.markdown(f"**- [{numero}] {nome}**")
 
                 # Informação sobre filtros aplicados
                 if manual_categorias or manual_coletaneas or auto_filters:

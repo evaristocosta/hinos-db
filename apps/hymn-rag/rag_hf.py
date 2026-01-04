@@ -442,69 +442,38 @@ class HymnRAG:
         else:
             self.bm25_retriever = None
 
-    def _call_hf_api(self, prompt: str, max_tokens: int = 512) -> str:
-        """Chama a API Hugging Face via InferenceClient oficial"""
+    def _call_hf_api_stream(self, prompt: str, max_tokens: int = 512):
+        """Chama a API Hugging Face com streaming via InferenceClient"""
         if not self.hf_token:
-            return "❌ Token de API não configurado"
+            yield "❌ Token de API não configurado"
+            return
 
         try:
-            # Usa chat_completion para melhor compatibilidade
+            # Usa chat_completion com streaming
             messages = [{"role": "user", "content": prompt}]
 
-            response = self.hf_client.chat_completion(
+            for chunk in self.hf_client.chat_completion(
                 messages=messages,
                 model=HF_LLM_MODEL,
                 max_tokens=max_tokens,
                 temperature=0.1,
-            )
-
-            # Extrai o conteúdo da resposta
-            if hasattr(response, "choices") and len(response.choices) > 0:
-                return response.choices[0].message.content.strip()
-            else:
-                return str(response).strip()
+                stream=True,
+            ):
+                if hasattr(chunk, "choices") and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    if hasattr(delta, "content") and delta.content:
+                        yield delta.content
 
         except Exception as e:
             error_msg = str(e).lower()
             if "rate limit" in error_msg or "429" in error_msg:
-                return "❌ Rate limit atingido. Aguarde alguns segundos."
+                yield "❌ Rate limit atingido. Aguarde alguns segundos."
             elif "503" in error_msg or "loading" in error_msg:
-                return "❌ Modelo está carregando. Aguarde e tente novamente."
+                yield "❌ Modelo está carregando. Aguarde e tente novamente."
             elif "timeout" in error_msg:
-                return "❌ Timeout na requisição. Tente novamente."
+                yield "❌ Timeout na requisição. Tente novamente."
             else:
-                return f"❌ Erro ao chamar API: {str(e)}"
-
-    def _rewrite_query(self, question: str) -> str:
-        """Reescreve a consulta usando HF API"""
-        prompt = f"""<s>[INST] Reescreva a consulta do usuário para busca em hinos, expandindo com sinônimos e 
-termos relacionados, mantendo intenção e concisão. Mantenha as palavras que estiverem entre aspas. 
-Não adicione explicações sobre as alterações na consulta.
-Responda somente em português.
-
-Consulta: {question} [/INST]"""
-
-        return self._call_hf_api(prompt, max_tokens=128)
-
-    def _generate_answer(self, question: str, rewritten: str, context: str) -> str:
-        """Gera resposta usando HF API"""
-        prompt = f"""<s>[INST] Você é um assistente que responde apenas com base nas opções de hinos fornecidas no contexto.
-É preferível retornar mais de uma opção, pelo menos três, quando disponível.
-Explique os motivos de selecionar tais hinos.
-Cite números (se houver) e títulos.
-Se não souber, diga que não está na base.
-Responda somente em português.
-
-Pergunta original: {question}
-
-Consulta reescrita: {rewritten}
-
-Contexto:
-{context}
-
-Resposta: [/INST]"""
-
-        return self._call_hf_api(prompt, max_tokens=512)
+                yield f"❌ Erro ao chamar API: {str(e)}"
 
     def _format_docs(self, docs: List[Document]) -> str:
         parts = []
@@ -623,13 +592,14 @@ Resposta: [/INST]"""
 
         return combined[:MAX_RESULTS]
 
-    def query(
+    def query_stream(
         self,
         question: str,
         auto_filters: bool = False,
         manual_categorias: List[str] = None,
         manual_coletaneas: List[str] = None,
-    ) -> str:
+    ):
+        """Consulta com streaming de resposta - retorna (docs, generator)"""
         # Extrai referências bíblicas
         bible_refs = extract_bible_refs(question)
         bible_context = fetch_bible_verses(bible_refs) if bible_refs else ""
@@ -666,26 +636,18 @@ Resposta: [/INST]"""
         if self.verbose:
             print(f"📝 Query para busca: {search_query}")
 
-        # Reescreve consulta
-        rewritten = self._rewrite_query(search_query)
-        if self.verbose:
-            print(f"📝 Consulta reescrita: {rewritten}")
-
-        # Enriquece com texto bíblico
-        effective_query = rewritten
-        if bible_context:
-            effective_query = rewritten + "\n\n" + '"' + bible_context[:700] + '"'
-            if self.verbose:
-                print("🔎 Consulta enriquecida com texto bíblico")
-
-        # Busca hinos
-        docs = self._hybrid_retrieve_filtered(effective_query, filters)
+        # Busca hinos diretamente com a query original
+        docs = self._hybrid_retrieve_filtered(search_query, filters)
 
         if self.verbose:
             print(f"📚 {len(docs)} hinos encontrados")
 
         if not docs:
-            return "❌ Nenhum hino encontrado com esses critérios."
+
+            def empty_generator():
+                yield "❌ Nenhum hino encontrado com esses critérios."
+
+            return [], empty_generator()
 
         # Formata contexto
         context = self._format_docs(docs)
@@ -694,7 +656,22 @@ Resposta: [/INST]"""
 
         filter_info = ""
         if filters.get("categorias") or filters.get("coletaneas"):
-            filter_info = f"\nFiltros: {filters}"
+            filter_info = f"\nFiltros aplicados: Categorias={filters.get('categorias')}, Coletâneas={filters.get('coletaneas')}"
 
-        # Gera resposta
-        return self._generate_answer(question, rewritten + filter_info, context)
+        # Gera resposta com streaming
+        prompt = f"""<s>[INST] Você é um assistente que responde apenas com base nas opções de hinos fornecidas no contexto.
+É preferível retornar mais de uma opção, pelo menos três, quando disponível.
+Explique os motivos de selecionar tais hinos.
+Cite números (se houver) e títulos.
+Se não souber, diga que não está na base.
+Responda somente em português.
+
+Pergunta: {question}{filter_info}
+
+Contexto:
+{context}
+
+Resposta: [/INST]"""
+
+        # Retorna docs e o generator
+        return docs, self._call_hf_api_stream(prompt, max_tokens=512)
