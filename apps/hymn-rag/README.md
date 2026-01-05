@@ -73,22 +73,6 @@ Esta aplicação utiliza técnicas avançadas de busca semântica e geração de
 - **Token Hugging Face**: É obrigatório para o funcionamento do sistema RAG
 - **Limitações**: O plano gratuito do Streamlit Cloud tem limites de recursos e tempo de execução
 
-### 🔧 Estrutura de Arquivos Necessária
-
-```
-apps/hymn-rag/
-├── streamlit_app.py        # Aplicação principal
-├── rag_hf.py              # Sistema RAG com Hugging Face
-├── requirements.txt       # Dependências Python
-├── packages.txt          # Dependências do sistema
-└── README.md            # Este arquivo
-
-apps/shared/assets/
-├── hinos.db                              # Banco de dados SQLite
-├── hymn_rag_vectorstore/                 # Vectorstore Chroma
-└── hymn_rag_chunks.pkl                   # Chunks pré-processados
-```
-
 ## 💻 Desenvolvimento Local
 
 Para rodar localmente:
@@ -115,9 +99,12 @@ Para rodar localmente:
 - **ChromaDB**: Vectorstore para busca semântica
 - **SQLite**: Banco de dados de hinos
 
-## 📝 Licença
+## ⚠️ Disclaimer
 
-Este projeto é parte da Coletânea de Hinos da Igreja Cristã Maranata.
+Este projeto serve apenas de auxílio para consulta de hinos.
+É um trabalho voluntário, e não possui afiliação oficial com a Igreja Cristã Maranata.
+As respostas são geradas automaticamente e podem não refletir todas as nuances dos hinos disponíveis.
+Sempre consulte a coletânea e canais oficiais para informações completas.
 
 ---
 
