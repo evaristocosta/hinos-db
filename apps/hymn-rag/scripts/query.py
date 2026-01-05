@@ -348,8 +348,6 @@ Responda SOMENTE em PORTUGUÊS DO BRASIL.
 
             vec_docs = vec_docs[:10]
 
-            if len(vec_docs) == 0:
-                vec_docs = self.vector_retriever.invoke(search_query)
         else:
             vec_docs = self.vector_retriever.invoke(search_query)
 
