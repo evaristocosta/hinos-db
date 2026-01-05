@@ -1,47 +1,112 @@
 #!/usr/bin/env python
 """
-Sistema RAG adaptado para usar Hugging Face Inference API
-Usa vectorstore e chunks pré-calculados do repositório
+Script de busca RAG para a Coletânea de Hinos
+
+NOTA: Este script requer que os assets (vectorstore e chunks cache) tenham sido
+      gerados previamente. Execute 'python generate_assets.py' primeiro.
+
+Uso: python query.py "sua consulta aqui" [--verbose]
 """
-import os
+import argparse
 import sqlite3
 import pickle
 import re
+
+import os
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from huggingface_hub import InferenceClient
-
-from langchain_core.documents import Document
-from langchain_community.retrievers import BM25Retriever
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_chroma import Chroma
+from langchain_core.documents import Document
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_community.retrievers import BM25Retriever
 
-from src.fetch_bible import extract_bible_refs, fetch_bible_verses
-from src.extract_categories import extract_filters_deterministic
+import sys
 
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "utils"))
+
+from fetch_bible import extract_bible_refs, fetch_bible_verses
+from extract_categories import extract_filters_deterministic
 
 # ===== CONFIGURAÇÕES =====
-# Modelo de embeddings local (usa sentence-transformers)
-# HF_EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-HF_EMBED_MODEL = "nomic-ai/nomic-embed-text-v1"
-
-# Modelo LLM via Hugging Face InferenceClient
-HF_LLM_MODEL = "openai/gpt-oss-20b"
-
-# Configurações de busca
+OLLAMA_EMBED_MODEL = "nomic-embed-text"
+OLLAMA_LLM_MODELS = [
+    "gemma3:1b",
+    "llama3.2:1b",
+    "gemma3:4b",
+]
+LLM_TEMPERATURE = 0.1
 MAX_RESULTS = 15
 VECTOR_SEARCH_K = 10
 VECTOR_FETCH_K = 25
 BM25_K = 10
 
 
+def _resolve_categorias(inputs: List[str], categorias_dict: dict) -> List[str]:
+    """
+    Resolve categorias por índice (1-based) ou nome.
+    Retorna lista de nomes de categorias válidos (lowercase).
+    """
+    categorias_list = list(categorias_dict.keys())
+    resolved = []
+
+    for inp in inputs:
+        inp = inp.strip()
+        # Tenta como índice
+        if inp.isdigit():
+            idx = int(inp) - 1  # Converte para 0-based
+            if 0 <= idx < len(categorias_list):
+                resolved.append(categorias_list[idx])
+            else:
+                print(f"⚠️ Índice de categoria inválido: {inp}")
+        else:
+            # Tenta como nome (normalizado)
+            inp_lower = inp.lower()
+            if inp_lower in categorias_dict:
+                resolved.append(inp_lower)
+            else:
+                print(f"⚠️ Categoria não encontrada: {inp}")
+
+    return resolved
+
+
+def _resolve_coletaneas(inputs: List[str], coletaneas_dict: dict) -> List[str]:
+    """
+    Resolve coletâneas por índice (1-based) ou nome.
+    Retorna lista de nomes de coletâneas válidos (lowercase).
+    """
+    coletaneas_list = list(coletaneas_dict.keys())
+    resolved = []
+
+    for inp in inputs:
+        inp = inp.strip()
+        # Tenta como índice
+        if inp.isdigit():
+            idx = int(inp) - 1  # Converte para 0-based
+            if 0 <= idx < len(coletaneas_list):
+                resolved.append(coletaneas_list[idx])
+            else:
+                print(f"⚠️ Índice de coletânea inválido: {inp}")
+        else:
+            # Tenta como nome (normalizado)
+            inp_lower = inp.lower()
+            if inp_lower in coletaneas_dict:
+                resolved.append(inp_lower)
+            else:
+                print(f"⚠️ Coletânea não encontrada: {inp}")
+
+    return resolved
+
+
 # ===== CLASSE PRINCIPAL =====
 class HymnRAG:
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, model: str = OLLAMA_LLM_MODELS[0]):
         self.verbose = verbose
         self.db_path = self._locate_database()
         self.vector_dir = Path(__file__).parent.parent / "assets" / "vectorstore"
@@ -53,45 +118,23 @@ class HymnRAG:
         # Carrega configurações do banco
         self._load_metadata()
 
-        # Inicializa embeddings locais
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=HF_EMBED_MODEL,
-            model_kwargs={"device": "cpu", "trust_remote_code": True},
-            encode_kwargs={"normalize_embeddings": True},
-        )
+        # Inicializa componentes
+        self.embeddings = OllamaEmbeddings(model=OLLAMA_EMBED_MODEL)
+        self.llm = OllamaLLM(model=model, temperature=LLM_TEMPERATURE)
 
-        # Tenta obter o token do Streamlit secrets primeiro, depois do .env
-        self.hf_token = None
-        try:
-            import streamlit as st
-
-            if hasattr(st, "secrets"):
-                self.hf_token = st.secrets.get("HUGGINGFACE_API_TOKEN")
-        except:
-            pass
-
-        if not self.hf_token:
-            self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
-
-        if not self.hf_token:
-            print(
-                "⚠️ HUGGINGFACE_API_TOKEN não encontrado. Configure como variável de ambiente ou Streamlit secret."
-            )
-
-        # Inicializa InferenceClient
-        self.hf_client = InferenceClient(token=self.hf_token)
-
-        # Carrega chunks e vectorstore PRÉ-CALCULADOS
+        # Carrega chunks e vectorstore (devem ter sido gerados previamente)
         self.chunks = self._load_chunks()
         self.vectorstore = self._load_vectorstore()
 
         # Configura retrievers
         self._setup_retrievers()
 
+        # Configura chains
+        self._setup_chains()
+
         if self.verbose:
             print("✅ Sistema inicializado com sucesso!")
-            print(f"🤖 Modelo LLM: {HF_LLM_MODEL}")
-            print(f"📦 Modelo Embeddings: {HF_EMBED_MODEL}")
+            print(f"🤖 Modelo: {model}")
 
     def _locate_database(self) -> Path:
         candidates = [
@@ -111,12 +154,15 @@ class HymnRAG:
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
 
+            # Total de hinos
             cur.execute("SELECT count(*) FROM hino")
             self.total_hinos = cur.fetchone()[0]
 
+            # Categorias
             cur.execute("SELECT id, descricao FROM categoria")
             self.categorias = {row[1].lower(): row[0] for row in cur.fetchall()}
 
+            # Coletâneas
             cur.execute("SELECT id, nome FROM coletanea")
             self.coletaneas = {row[1].lower(): row[0] for row in cur.fetchall()}
 
@@ -124,11 +170,11 @@ class HymnRAG:
             print(f"📊 Total de hinos: {self.total_hinos}")
 
     def _load_chunks(self) -> List[Document]:
-        """Carrega chunks PRÉ-CALCULADOS do cache"""
+        """Carrega chunks do cache. Requer que os assets tenham sido gerados previamente."""
         if not self.chunks_cache.exists():
             raise FileNotFoundError(
                 f"Cache de chunks não encontrado: {self.chunks_cache}\n"
-                "Execute o query.py localmente primeiro para gerar o cache."
+                "Execute 'python generate_assets.py' primeiro para gerar os assets."
             )
 
         if self.verbose:
@@ -143,14 +189,14 @@ class HymnRAG:
         return chunks
 
     def _load_vectorstore(self) -> Chroma:
-        """Carrega vectorstore PRÉ-CALCULADO"""
+        """Carrega vectorstore. Requer que os assets tenham sido gerados previamente."""
         if (
             not self.vector_dir.exists()
             or not (self.vector_dir / "chroma.sqlite3").exists()
         ):
             raise FileNotFoundError(
                 f"Vectorstore não encontrado: {self.vector_dir}\n"
-                "Execute o query.py localmente primeiro para gerar o vectorstore."
+                "Execute 'python generate_assets.py' primeiro para gerar os assets."
             )
 
         if self.verbose:
@@ -170,6 +216,7 @@ class HymnRAG:
 
         # BM25 retriever
         if self.chunks:
+            # Carrega stopwords
             stopwords = set()
             if self.stopwords_path.exists():
                 with open(self.stopwords_path, encoding="utf-8") as f:
@@ -192,38 +239,25 @@ class HymnRAG:
         else:
             self.bm25_retriever = None
 
-    def _call_hf_api_stream(self, prompt: str, max_tokens: int = 512):
-        """Chama a API Hugging Face com streaming via InferenceClient"""
-        if not self.hf_token:
-            yield "❌ Token de API não configurado"
-            return
-
-        try:
-            # Usa chat_completion com streaming
-            messages = [{"role": "user", "content": prompt}]
-
-            for chunk in self.hf_client.chat_completion(
-                messages=messages,
-                model=HF_LLM_MODEL,
-                max_tokens=max_tokens,
-                temperature=0.1,
-                stream=True,
-            ):
-                if hasattr(chunk, "choices") and len(chunk.choices) > 0:
-                    delta = chunk.choices[0].delta
-                    if hasattr(delta, "content") and delta.content:
-                        yield delta.content
-
-        except Exception as e:
-            error_msg = str(e).lower()
-            if "rate limit" in error_msg or "429" in error_msg:
-                yield "❌ Rate limit atingido. Aguarde alguns segundos."
-            elif "503" in error_msg or "loading" in error_msg:
-                yield "❌ Modelo está carregando. Aguarde e tente novamente."
-            elif "timeout" in error_msg:
-                yield "❌ Timeout na requisição. Tente novamente."
-            else:
-                yield f"❌ Erro ao chamar API: {str(e)}"
+    def _setup_chains(self):
+        # Prompt de resposta
+        answer_system = """
+Você é um assistente que responde apenas com base nas opções de hinos fornecidas no contexto.
+É preferível retornar mais de uma opção, pelo menos três, quando disponível, a não ser que requisitado diferente na pergunta.
+Explique de maneira sucinta os motivos de selecionar tais hinos.
+Cite os números dos hinos (se houver) e principalmente os títulos.
+Se não souber, diga que não encontrou na base.
+Responda SOMENTE em PORTUGUÊS DO BRASIL.
+"""
+        self.answer_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", answer_system),
+                (
+                    "user",
+                    "Pergunta original: {question}\n\nContexto:\n{context}\n\nResposta:",
+                ),
+            ]
+        )
 
     def _format_docs(self, docs: List[Document]) -> str:
         parts = []
@@ -236,6 +270,7 @@ class HymnRAG:
     def _hybrid_retrieve_filtered(
         self, search_query: str, filters: dict
     ) -> List[Document]:
+        # Coleta IDs de categorias/coletâneas
         categoria_ids = []
         if filters.get("categorias"):
             for cat_name in filters["categorias"]:
@@ -253,6 +288,7 @@ class HymnRAG:
         if self.verbose:
             print(f"🔍 Filtros: categorias={categoria_ids}, coletaneas={coletanea_ids}")
 
+        # Helper para verificar filtros (intersecção)
         def matches_filters(doc) -> bool:
             if categoria_ids:
                 if doc.metadata.get("categoria_id") not in categoria_ids:
@@ -349,7 +385,7 @@ class HymnRAG:
         manual_categorias: List[str] = None,
         manual_coletaneas: List[str] = None,
     ):
-        """Consulta com streaming de resposta - retorna (docs, generator)"""
+        """Consulta com streaming de resposta - retorna (docs, bible_context, generator)"""
         # Extrai referências bíblicas
         bible_refs = extract_bible_refs(question)
         bible_context = fetch_bible_verses(bible_refs) if bible_refs else ""
@@ -383,6 +419,7 @@ class HymnRAG:
 
         search_query = filters.get("search_query", question)
 
+        # Enriquece com texto bíblico
         effective_query = search_query
         if bible_context:
             effective_query = search_query + "\n\n" + '"' + bible_context[:700] + '"'
@@ -392,18 +429,20 @@ class HymnRAG:
         if self.verbose:
             print(f"📝 Query para busca: {effective_query}")
 
-        # Busca hinos diretamente com a query original
+        # Busca hinos
         docs = self._hybrid_retrieve_filtered(effective_query, filters)
 
         if self.verbose:
             print(f"📚 {len(docs)} hinos encontrados")
+            for doc in docs:
+                print(f"  - [{doc.metadata.get('numero')}] {doc.metadata.get('nome')}")
 
         if not docs:
 
             def empty_generator():
                 yield "❌ Nenhum hino encontrado com esses critérios."
 
-            return [], empty_generator()
+            return empty_generator()
 
         # Formata contexto
         context = self._format_docs(docs)
@@ -415,19 +454,153 @@ class HymnRAG:
             filter_info = f"\nFiltros aplicados: Categorias={filters.get('categorias')}, Coletâneas={filters.get('coletaneas')}"
 
         # Gera resposta com streaming
-        prompt = f"""<s>[INST] Você é um assistente que responde apenas com base nas opções de hinos fornecidas no contexto.
-É preferível retornar mais de uma opção, pelo menos três, quando disponível, a não ser que requisitado diferente na pergunta.
-Explique de maneira sucinta os motivos de selecionar tais hinos.
-Cite os números dos hinos (se houver) e principalmente os títulos.
-Se não souber, diga que não encontrou na base.
-Responda SOMENTE em PORTUGUÊS DO BRASIL.
+        final_prompt = self.answer_prompt.format(
+            question=question + filter_info, context=context
+        )
 
-Pergunta: {question}{filter_info}
+        if self.verbose:
+            print("💬 Gerando resposta...")
 
-Contexto:
-{context}
+        # Retorna docs, bible_context e o generator
+        def stream_generator():
+            for chunk in self.llm.stream(final_prompt):
+                yield chunk
 
-Resposta: [/INST]"""
+        return stream_generator()
 
-        # Retorna docs e o generator
-        return docs, bible_context, self._call_hf_api_stream(prompt, max_tokens=None)
+
+# ===== MAIN =====
+def main():
+    parser = argparse.ArgumentParser(
+        description="Sistema RAG de busca na Coletânea de Hinos",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemplos:
+  python query.py "Hinos sobre unidade"
+  python query.py "Hinos sobre graça" -f --verbose
+  python query.py "Hinos que combinam com Isaías 4:6" -v
+  python query.py "Hinos sobre salvação" --categorias 4 5
+  python query.py "Louvores" --coletaneas 1 4
+  python query.py "Hinos de consolo" --categorias "consolo e encorajamento"
+        """,
+    )
+    parser.add_argument("query", type=str, help="Consulta/pergunta sobre hinos")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Modo verboso (mostra detalhes do processamento)",
+    )
+    parser.add_argument(
+        "-m",
+        "--model",
+        type=str,
+        default=OLLAMA_LLM_MODELS[0],
+        choices=OLLAMA_LLM_MODELS,
+        help="Modelo LLM a ser usado",
+    )
+    parser.add_argument(
+        "-f",
+        "--auto-filters",
+        action="store_true",
+        help="Habilita extração automática de filtros do prompt (padrão: desabilitado)",
+    )
+    parser.add_argument(
+        "--categorias",
+        nargs="+",
+        type=str,
+        help="Categorias para filtrar (por índice 1-based ou nome). Ex: 1 4 ou 'clamor'",
+    )
+    parser.add_argument(
+        "--coletaneas",
+        nargs="+",
+        type=str,
+        help="Coletâneas para filtrar (por índice 1-based ou nome)",
+    )
+    parser.add_argument(
+        "--list-models",
+        action="store_true",
+        help="Lista todos os modelos LLM disponíveis e sai",
+    )
+    parser.add_argument(
+        "--list-categorias",
+        action="store_true",
+        help="Lista todas as categorias disponíveis e sai",
+    )
+    parser.add_argument(
+        "--list-coletaneas",
+        action="store_true",
+        help="Lista todas as coletâneas disponíveis e sai",
+    )
+
+    args = parser.parse_args()
+
+    # Inicializa sistema
+    rag = HymnRAG(verbose=args.verbose, model=args.model)
+
+    # Lista modelos se solicitado
+    if args.list_models:
+        print("\n🤖 Modelos LLM disponíveis:")
+        for i, model in enumerate(OLLAMA_LLM_MODELS, 1):
+            print(f"  {i}. {model}")
+        print()
+        return
+
+    # Lista categorias/coletâneas se solicitado
+    if args.list_categorias:
+        print("\n📑 Categorias disponíveis:")
+        for i, cat in enumerate(rag.categorias.keys(), 1):
+            print(f"  {i}. {cat}")
+        print()
+        return
+
+    if args.list_coletaneas:
+        print("\n📚 Coletâneas disponíveis:")
+        for i, col in enumerate(rag.coletaneas.keys(), 1):
+            print(f"  {i}. {col}")
+        print()
+        return
+
+    # Processa filtros manuais
+    manual_categorias = None
+    manual_coletaneas = None
+
+    if args.categorias:
+        manual_categorias = _resolve_categorias(args.categorias, rag.categorias)
+        if not manual_categorias:
+            print("❌ Nenhuma categoria válida fornecida")
+            return
+
+    if args.coletaneas:
+        manual_coletaneas = _resolve_coletaneas(args.coletaneas, rag.coletaneas)
+        if not manual_coletaneas:
+            print("❌ Nenhuma coletânea válida fornecida")
+            return
+
+    # Executa consulta com streaming
+    if args.verbose:
+        print("\n" + "=" * 60)
+        print(f"CONSULTA: {args.query}")
+        print("=" * 60 + "\n")
+
+    stream_generator = rag.query_stream(
+        args.query,
+        auto_filters=args.auto_filters,
+        manual_categorias=manual_categorias,
+        manual_coletaneas=manual_coletaneas,
+    )
+
+    if args.verbose:
+        print("\n" + "=" * 60)
+        print("RESPOSTA:")
+        print("=" * 60)
+
+    # Exibe resposta com streaming
+    print()
+    for chunk in stream_generator:
+        print(chunk, end="", flush=True)
+    print("\n")
+
+
+if __name__ == "__main__":
+    main()
