@@ -224,3 +224,4 @@ apps/etl-similarity/assets/*
 !apps/hymn-rag/assets/vectorstore/chroma.sqlite3
 cc.*.bin
 cc.*.bin.gz
+!apps/hymn-rag/scripts
