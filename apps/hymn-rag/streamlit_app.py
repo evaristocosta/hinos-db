@@ -9,14 +9,14 @@ import sys
 # Adiciona o diretório do projeto ao path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from rag_hf import HymnRAG
+from src.rag_hf import HymnRAG
 
 # Configuração da página
 st.set_page_config(
     page_title="Busca Inteligente de Hinos",
     page_icon="🎵",
     layout="wide",
-    initial_sidebar_state="expanded",
+    # initial_sidebar_state="expanded",
 )
 
 # CSS customizado
@@ -63,7 +63,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="sub-header">Sistema para consulta de hinos da Coletânea</div>',
+    '<div class="sub-header">Sistema para consulta de hinos da Igreja Cristã Maranata</div>',
     unsafe_allow_html=True,
 )
 
@@ -73,7 +73,8 @@ st.markdown(
 def load_rag():
     """Carrega o sistema RAG uma única vez"""
     try:
-        return HymnRAG(verbose=False)
+        is_development = st.secrets.get("DEVELOPMENT_MODE", False)
+        return HymnRAG(verbose=is_development)
     except Exception as e:
         st.error(f"❌ Erro ao inicializar o sistema: {str(e)}")
         st.stop()
@@ -101,6 +102,7 @@ with st.sidebar:
         "Categorias",
         options=categorias_disponiveis,
         help="Selecione uma ou mais categorias para filtrar",
+        placeholder="Selecione uma ou mais categorias",
     )
 
     # Coletâneas
@@ -109,6 +111,7 @@ with st.sidebar:
         "Coletâneas",
         options=coletaneas_disponiveis,
         help="Selecione uma ou mais coletâneas para filtrar",
+        placeholder="Selecione uma ou mais coletâneas",
     )
 
     # Informações
@@ -130,7 +133,7 @@ with st.sidebar:
     st.markdown(
         """
     - Hinos sobre unidade
-    - Louvores de gratidão
+    - Louvores para visita em lar de idosos
     - Hinos que combinam com Isaías 43:2
     - Músicas sobre a volta de Jesus
     - Hinos de consolo
@@ -150,6 +153,16 @@ with col1:
 with col2:
     search_button = st.button("🔍 Buscar", type="primary", use_container_width=True)
 
+st.expander("ℹ️ Instruções", expanded=False).markdown(
+    """
+Imagine que você está fazendo uma pergunta a um assistente virtual que tem acesso aos hinos da Igreja Cristã
+Maranata, inclusive de crianças e avulsos. A resposta será de sugestões de hinos que melhor respondem à sua consulta.
+Importante:
+- Se quiser usar uma referência bíblica, não precisa colocar o texto inteiro, apenas a referência (ex: João 3:16);
+- Você pode aplicar filtros manuais na barra lateral, escolhendo categorias e coletâneas específicas.
+"""
+)
+
 # Área de resultados
 if search_button:
     if not query:
@@ -166,7 +179,7 @@ if search_button:
                 )
 
                 # Executa a consulta e obtém docs e generator
-                docs, response_stream = rag.query_stream(
+                docs, bible_context, response_stream = rag.query_stream(
                     question=query,
                     auto_filters=False,
                     manual_categorias=manual_categorias,
@@ -181,10 +194,17 @@ if search_button:
                 with st.container():
                     st.write_stream(response_stream)
 
+                # Expander com texto bíblico de contexto, se houver
+                if bible_context:
+                    with st.expander("📖 Contexto Bíblico Utilizado"):
+                        st.markdown(bible_context)
+
                 # Expander com hinos encontrados
                 if docs:
-                    with st.expander(f"🎵 Todos os hinos relacionados ({len(docs)})"):
-                        st.write("A busca retornou os hinos da resposta, e mais estes:")
+                    with st.expander(f"🎵 Hinos relacionados ({len(docs)})"):
+                        st.write(
+                            "Estes são alguns dos hinos que podem ter relação com sua consulta:"
+                        )
                         for i, doc in enumerate(docs, start=1):
                             numero = doc.metadata.get("numero", "N/A")
                             if numero == "null":
@@ -242,12 +262,30 @@ if search_button:
                 st.error(f"❌ Erro ao processar consulta: {str(e)}")
                 st.exception(e)
 
+
 # Footer
 st.markdown("---")
+# Disclaimer
+st.markdown(
+    """
+<div style="text-align: center; color: #666; font-size: 0.8rem;">
+    ⚠️ Este sistema é uma ferramenta de auxílio para consulta de hinos. 
+    É um trabalho voluntário, e não possui afiliação oficial com a Igreja Cristã Maranata.
+    As respostas são geradas automaticamente e podem não refletir todas as nuances dos hinos disponíveis. 
+    Sempre consulte a coletânea e canais oficiais para informações completas.
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+st.markdown("&#8203;")  # Espaço vertical pequeno
+
+# Desenvolvimento
 st.markdown(
     """
 <div style="text-align: center; color: #666; font-size: 0.9rem;">
-    Desenvolvido com ❤️ usando Streamlit e Hugging Face
+    Desenvolvido com ❤️ por <a href="https://github.com/evaristocosta" target="_blank">Lucas Costa</a> 
+    usando Streamlit, <a href="https://www.abibliadigital.com.br/" target="_blank">ABibliaDigital</a> e Hugging Face
 </div>
 """,
     unsafe_allow_html=True,

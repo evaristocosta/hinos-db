@@ -10,15 +10,19 @@ import re
 import unicodedata
 import requests
 from pathlib import Path
-from typing import List, Dict
-import numpy as np
+from typing import List
 from dotenv import load_dotenv
+
+load_dotenv()
+
 from huggingface_hub import InferenceClient
 
 from langchain_core.documents import Document
 from langchain_community.retrievers import BM25Retriever
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+
+from src.bible_constants import BIBLE_BOOK_MAP, BIBLE_BOOK_PATTERNS
 
 
 # ===== CONFIGURAÇÕES =====
@@ -27,37 +31,13 @@ from langchain_chroma import Chroma
 HF_EMBED_MODEL = "nomic-ai/nomic-embed-text-v1"
 
 # Modelo LLM via Hugging Face InferenceClient
-# Usando modelo que funciona bem com text-generation
-HF_LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+HF_LLM_MODEL = "openai/gpt-oss-20b"
 
 # Configurações de busca
 MAX_RESULTS = 15
 VECTOR_SEARCH_K = 10
 VECTOR_FETCH_K = 25
 BM25_K = 10
-
-# Categorias e coletâneas (mantidas para compatibilidade)
-CATEGORIAS = [
-    "clamor",
-    "invocação e comunhão",
-    "dedicação",
-    "morte, ressurreição e salvação",
-    "consolo e encorajamento",
-    "santificação e derramamento do espírito santo",
-    "volta de jesus e eternidade",
-    "louvor",
-    "salmos de louvor",
-    "grupo de louvor",
-    "corinhos",
-]
-COLETANEAS = [
-    "coletânea de louvores - igreja cristã maranata - edição 2018",
-    "coletânea de crianças - igreja cristã maranata - edição 2019",
-    "louvores avulsos de crianças, intermediários e adolescentes - edição 2022",
-    "louvores avulsos",
-    "louvores avulsos - manual",
-    "louvores avulsos cias - manual",
-]
 
 
 # ===== UTILIDADES PARA REFERÊNCIAS BÍBLICAS =====
@@ -66,118 +46,101 @@ def _normalize_text(text: str) -> str:
     return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
 
 
-BIBLE_BOOK_MAP: Dict[str, str] = {
-    "genesis": "Genesis",
-    "exodo": "Exodus",
-    "levitico": "Leviticus",
-    "numeros": "Numbers",
-    "deuteronomio": "Deuteronomy",
-    "josue": "Joshua",
-    "juizes": "Judges",
-    "rute": "Ruth",
-    "1samuel": "1 Samuel",
-    "2samuel": "2 Samuel",
-    "1reis": "1 Kings",
-    "2reis": "2 Kings",
-    "1cronicas": "1 Chronicles",
-    "2cronicas": "2 Chronicles",
-    "esdras": "Ezra",
-    "neemias": "Nehemiah",
-    "ester": "Esther",
-    "jo": "Job",
-    "salmos": "Psalms",
-    "proverbios": "Proverbs",
-    "eclesiastes": "Ecclesiastes",
-    "cantico": "Song of Solomon",
-    "canticos": "Song of Solomon",
-    "cantares": "Song of Solomon",
-    "isaias": "Isaiah",
-    "jeremias": "Jeremiah",
-    "lamentacoes": "Lamentations",
-    "ezequiel": "Ezekiel",
-    "daniel": "Daniel",
-    "oseias": "Hosea",
-    "joel": "Joel",
-    "amos": "Amos",
-    "obadias": "Obadiah",
-    "jonas": "Jonah",
-    "miqueias": "Micah",
-    "naum": "Nahum",
-    "habacuque": "Habakkuk",
-    "sofonias": "Zephaniah",
-    "ageu": "Haggai",
-    "zacarias": "Zechariah",
-    "malaquias": "Malachi",
-    "mateus": "Matthew",
-    "marcos": "Mark",
-    "lucas": "Luke",
-    "joao": "John",
-    "atos": "Acts",
-    "romanos": "Romans",
-    "1corintios": "1 Corinthians",
-    "2corintios": "2 Corinthians",
-    "galatas": "Galatians",
-    "efesios": "Ephesians",
-    "filipenses": "Philippians",
-    "colossenses": "Colossians",
-    "1tessalonicenses": "1 Thessalonians",
-    "2tessalonicenses": "2 Thessalonians",
-    "1timoteo": "1 Timothy",
-    "2timoteo": "2 Timothy",
-    "tito": "Titus",
-    "filemom": "Philemon",
-    "hebreus": "Hebrews",
-    "tiago": "James",
-    "1pedro": "1 Peter",
-    "2pedro": "2 Peter",
-    "1joao": "1 John",
-    "2joao": "2 John",
-    "3joao": "3 John",
-    "judas": "Jude",
-    "apocalipse": "Revelation",
-}
-
-REF_RE = re.compile(
-    r"(?i)([1-3]?\s?[A-Za-zÀ-ÿçãõâêôáéíóú]+(?:\s+dos\s+canticos|\s+de\s+canticos|\s+dos\s+reis|\s+cronicas|\s+corintios|\s+tessalonicenses|\s+pedro|\s+joao)*)\s+(\d{1,3})(?:[:\.](\d{1,3})(?:-(\d{1,3}))?)?"
-)
-
-
 def _normalize_book_key(book: str) -> str:
     return _normalize_text(book).replace(" ", "")
 
 
 def extract_bible_refs(text: str) -> List[dict]:
+    """
+    Extrai referências bíblicas do texto usando busca baseada em lista de livros conhecidos.
+    Busca padrões como: "1 Samuel 2", "João 3:16", "Gênesis 1:1-3"
+    """
+    if not text:
+        return []
+
     refs: List[dict] = []
     seen = set()
-    for match in REF_RE.finditer(text or ""):
-        book_raw = match.group(1)
-        chapter = match.group(2)
-        verse_start = match.group(3)
-        verse_end = match.group(4)
+    text_normalized = _normalize_text(text)
 
-        key = _normalize_book_key(book_raw)
-        if key not in BIBLE_BOOK_MAP:
-            continue
+    # Procura cada padrão de livro no texto
+    for patterns in BIBLE_BOOK_PATTERNS:
+        for pattern in patterns:
+            pattern_normalized = _normalize_text(pattern)
 
-        api_book = BIBLE_BOOK_MAP[key]
+            # Busca todas as ocorrências do livro no texto
+            start_idx = 0
+            while True:
+                idx = text_normalized.find(pattern_normalized, start_idx)
+                if idx == -1:
+                    break
 
-        if verse_start is None:
-            label = f"{book_raw.strip()} {chapter}"
-            api_ref = f"{api_book} {chapter}"
-        else:
-            label = f"{book_raw.strip()} {chapter}:{verse_start}{('-' + verse_end) if verse_end else ''}"
-            api_ref = f"{api_book} {chapter}:{verse_start}{('-' + verse_end) if verse_end else ''}"
+                # Verifica se é uma palavra completa (não parte de outra palavra)
+                before_ok = idx == 0 or not text_normalized[idx - 1].isalnum()
+                after_idx = idx + len(pattern_normalized)
+                after_ok = (
+                    after_idx >= len(text_normalized)
+                    or not text_normalized[after_idx].isalnum()
+                )
 
-        if api_ref in seen:
-            continue
-        seen.add(api_ref)
-        refs.append(
-            {
-                "label": label,
-                "api_ref": api_ref,
-                "type": "chapter" if verse_start is None else "verse",
-            }
-        )
+                if not (before_ok and after_ok):
+                    start_idx = idx + 1
+                    continue
+
+                # Pega o texto original (não normalizado) do livro
+                book_original = text[idx:after_idx].strip()
+
+                # Procura por números após o nome do livro
+                remaining = text[after_idx:].lstrip()
+
+                # Regex para capturar capítulo e versículos após o livro
+                chapter_verse_match = re.match(
+                    r"^(\d{1,3})(?:[:\.](\d{1,3})(?:-(\d{1,3}))?)?", remaining
+                )
+
+                if chapter_verse_match:
+                    chapter = chapter_verse_match.group(1)
+                    verse_start = chapter_verse_match.group(2)
+                    verse_end = chapter_verse_match.group(3)
+
+                    # Mapeia o livro para o código da API
+                    key = _normalize_book_key(pattern)
+                    if key not in BIBLE_BOOK_MAP:
+                        start_idx = idx + 1
+                        continue
+
+                    api_book = BIBLE_BOOK_MAP[key]
+
+                    # Cria as referências
+                    if verse_start is None:
+                        label = [f"{book_original} {chapter}"]
+                        api_ref = [f"{api_book}/{chapter}"]
+                    else:
+                        if verse_end is not None and int(verse_end) > int(verse_start):
+                            label = []
+                            api_ref = []
+                            for v in range(int(verse_start), int(verse_end) + 1):
+                                label.append(f"{book_original} {chapter}:{v}")
+                                api_ref.append(f"{api_book}/{chapter}/{v}")
+                        else:
+                            label = [f"{book_original} {chapter}:{verse_start}"]
+                            api_ref = [f"{api_book}/{chapter}/{verse_start}"]
+
+                    # Adiciona à lista se não for duplicado
+                    for l, a in zip(label, api_ref):
+                        if a not in seen:
+                            seen.add(a)
+                            refs.append(
+                                {
+                                    "label": l,
+                                    "api_ref": a,
+                                    "type": (
+                                        "chapter" if verse_start is None else "verse"
+                                    ),
+                                }
+                            )
+
+                start_idx = idx + 1
+
     return refs
 
 
@@ -189,20 +152,28 @@ def fetch_bible_verses(
     for ref in refs:
         try:
             resp = requests.get(
-                f"https://bible-api.com/{requests.utils.requote_uri(ref['api_ref'])}",
-                params={"translation": translation},
+                f"https://www.abibliadigital.com.br/api/verses/acf/{requests.utils.requote_uri(ref['api_ref'])}",
+                headers={
+                    "Authorization": f"Bearer {os.getenv('ABIBLIADIGITAL_API_TOKEN')}"
+                },
                 timeout=8,
             )
             if resp.status_code != 200:
                 continue
+
             data = resp.json()
-            text_parts = [v.get("text", "").strip() for v in data.get("verses", [])]
-            verse_text = " ".join([t for t in text_parts if t])
+            is_chapter = ref.get("type") == "chapter"
+            if not is_chapter:
+                verse_text = data.get("text", "").strip()
+            else:
+                verses_data = data.get("verses", [])
+                text_parts = [v.get("text", "").strip() for v in verses_data]
+                verse_text = " ".join([t for t in text_parts if t])
+
             if not verse_text:
                 continue
 
-            is_chapter = ref.get("type") == "chapter"
-            if is_chapter and len(verse_text) > 800:
+            if len(verse_text) > 800:
                 verse_text = verse_text[:800] + "..."
 
             snippet = f"{ref['label']} — {verse_text}"
@@ -212,6 +183,7 @@ def fetch_bible_verses(
                 break
         except Exception:
             continue
+
     return "\n".join(verses)
 
 
@@ -304,9 +276,11 @@ class HymnRAG:
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
         self.db_path = self._locate_database()
-        self.vector_dir = Path(__file__).parent / "assets" / "vectorstore"
-        self.chunks_cache = Path(__file__).parent / "assets" / "chunks_cache.pkl"
-        self.stopwords_path = Path(__file__).parent / "assets" / "stopwords-br.txt"
+        self.vector_dir = Path(__file__).parent.parent / "assets" / "vectorstore"
+        self.chunks_cache = Path(__file__).parent.parent / "assets" / "chunks_cache.pkl"
+        self.stopwords_path = (
+            Path(__file__).parent.parent / "assets" / "stopwords-br.txt"
+        )
 
         # Carrega configurações do banco
         self._load_metadata()
@@ -317,9 +291,6 @@ class HymnRAG:
             model_kwargs={"device": "cpu", "trust_remote_code": True},
             encode_kwargs={"normalize_embeddings": True},
         )
-
-        # Obtém token da API Hugging Face
-        load_dotenv()
 
         # Tenta obter o token do Streamlit secrets primeiro, depois do .env
         self.hf_token = None
@@ -356,7 +327,7 @@ class HymnRAG:
 
     def _locate_database(self) -> Path:
         candidates = [
-            Path(__file__).parent / "assets" / "database.db",
+            Path(__file__).parent.parent / "assets" / "database.db",
             Path.cwd() / "database" / "database.db",
             Path.cwd().parent / "database" / "database.db",
             Path.cwd().parent.parent / "database" / "database.db",
@@ -671,11 +642,11 @@ class HymnRAG:
 
         # Gera resposta com streaming
         prompt = f"""<s>[INST] Você é um assistente que responde apenas com base nas opções de hinos fornecidas no contexto.
-É preferível retornar mais de uma opção, pelo menos três, quando disponível.
-Explique os motivos de selecionar tais hinos.
-Cite números (se houver) e títulos.
-Se não souber, diga que não está na base.
-Responda somente em português.
+É preferível retornar mais de uma opção, pelo menos três, quando disponível, a não ser que requisitado diferente na pergunta.
+Explique de maneira sucinta os motivos de selecionar tais hinos.
+Cite os números dos hinos (se houver) e principalmente os títulos.
+Se não souber, diga que não encontrou na base.
+Responda SOMENTE em PORTUGUÊS DO BRASIL.
 
 Pergunta: {question}{filter_info}
 
@@ -685,4 +656,4 @@ Contexto:
 Resposta: [/INST]"""
 
         # Retorna docs e o generator
-        return docs, self._call_hf_api_stream(prompt, max_tokens=1024)
+        return docs, bible_context, self._call_hf_api_stream(prompt, max_tokens=None)
