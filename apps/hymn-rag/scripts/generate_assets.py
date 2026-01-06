@@ -6,6 +6,7 @@ Uso: python generate_assets.py [--verbose] [--force]
 import argparse
 import sqlite3
 import pickle
+import shutil
 from pathlib import Path
 from typing import List
 
@@ -17,7 +18,7 @@ from tqdm import tqdm
 
 
 # ===== CONFIGURAÇÕES =====
-OLLAMA_EMBED_MODEL = "nomic-embed-text"
+OLLAMA_EMBED_MODEL = "hf.co/mixedbread-ai/mxbai-embed-large-v1:latest"
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 120
 
@@ -168,6 +169,16 @@ def main():
             print(f"   Vectorstore: {vector_dir}")
             print("\nUse --force para regenerar")
             return
+    else:
+        # Remove assets antigos quando --force é usado
+        if chunks_cache.exists():
+            chunks_cache.unlink()
+            if args.verbose:
+                print(f"🗑️  Removido chunks cache antigo: {chunks_cache}")
+        if vector_dir.exists():
+            shutil.rmtree(vector_dir)
+            if args.verbose:
+                print(f"🗑️  Removido vectorstore antigo: {vector_dir}")
 
     print("🚀 Iniciando geração de assets...\n")
 

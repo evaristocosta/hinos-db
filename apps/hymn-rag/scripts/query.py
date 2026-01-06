@@ -35,14 +35,14 @@ from fetch_bible import extract_bible_refs, fetch_bible_verses
 from extract_categories import extract_filters_deterministic
 
 # ===== CONFIGURAÇÕES =====
-OLLAMA_EMBED_MODEL = "nomic-embed-text"
+OLLAMA_EMBED_MODEL = "hf.co/mixedbread-ai/mxbai-embed-large-v1:latest"
 OLLAMA_LLM_MODELS = [
     "gemma3:1b",
     "llama3.2:1b",
     "gemma3:4b",
 ]
 LLM_TEMPERATURE = 0.1
-MAX_RESULTS = 15
+MAX_RESULTS = 25
 VECTOR_SEARCH_K = 10
 VECTOR_FETCH_K = 25
 BM25_K = 10

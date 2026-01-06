@@ -27,16 +27,16 @@ from src.extract_categories import extract_filters_deterministic
 # ===== CONFIGURAÇÕES =====
 # Modelo de embeddings local (usa sentence-transformers)
 # HF_EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-HF_EMBED_MODEL = "nomic-ai/nomic-embed-text-v1"
+HF_EMBED_MODEL = "mixedbread-ai/mxbai-embed-large-v1"
 
 # Modelo LLM via Hugging Face InferenceClient
 HF_LLM_MODEL = "openai/gpt-oss-20b"
 
 # Configurações de busca
-MAX_RESULTS = 15
+MAX_RESULTS = 25
 VECTOR_SEARCH_K = 10
-VECTOR_FETCH_K = 25
-BM25_K = 10
+VECTOR_FETCH_K = 30
+BM25_K = 15
 
 
 # ===== CLASSE PRINCIPAL =====

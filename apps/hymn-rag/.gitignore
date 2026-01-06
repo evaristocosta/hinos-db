@@ -24,3 +24,6 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+assets/vectorstore
+!assets/vectorstore/chroma.sqlite3
