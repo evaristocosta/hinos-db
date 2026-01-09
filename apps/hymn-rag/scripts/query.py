@@ -19,7 +19,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from langchain_ollama import OllamaEmbeddings, OllamaLLM
+from langchain_ollama import OllamaLLM
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
@@ -35,7 +36,8 @@ from fetch_bible import extract_bible_refs, fetch_bible_verses
 from extract_categories import extract_filters_deterministic
 
 # ===== CONFIGURAÇÕES =====
-OLLAMA_EMBED_MODEL = "hf.co/mixedbread-ai/mxbai-embed-large-v1:latest"
+# Modelo de embeddings (sentence-transformers via HuggingFace - compatível com cloud)
+HF_EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 OLLAMA_LLM_MODELS = [
     "gemma3:1b",
     "llama3.2:1b",
@@ -119,7 +121,11 @@ class HymnRAG:
         self._load_metadata()
 
         # Inicializa componentes
-        self.embeddings = OllamaEmbeddings(model=OLLAMA_EMBED_MODEL)
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=HF_EMBED_MODEL,
+            model_kwargs={"device": "cpu", "trust_remote_code": True},
+            encode_kwargs={"normalize_embeddings": True, "batch_size": 16},
+        )
         self.llm = OllamaLLM(model=model, temperature=LLM_TEMPERATURE)
 
         # Carrega chunks e vectorstore (devem ter sido gerados previamente)

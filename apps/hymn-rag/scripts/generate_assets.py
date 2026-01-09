@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from typing import List
 
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
@@ -18,7 +18,8 @@ from tqdm import tqdm
 
 
 # ===== CONFIGURAÇÕES =====
-OLLAMA_EMBED_MODEL = "hf.co/mixedbread-ai/mxbai-embed-large-v1:latest"
+# Modelo de embeddings (sentence-transformers via HuggingFace - compatível com cloud)
+HF_EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 120
 
@@ -110,7 +111,7 @@ def create_chunks(
 
 def create_vectorstore(
     chunks: List[Document],
-    embeddings: OllamaEmbeddings,
+    embeddings: HuggingFaceEmbeddings,
     vector_dir: Path,
     verbose: bool = False,
 ):
@@ -189,8 +190,12 @@ def main():
 
     # Inicializa embeddings
     if args.verbose:
-        print(f"🤖 Inicializando embeddings: {OLLAMA_EMBED_MODEL}")
-    embeddings = OllamaEmbeddings(model=OLLAMA_EMBED_MODEL)
+        print(f"🤖 Inicializando embeddings: {HF_EMBED_MODEL}")
+    embeddings = HuggingFaceEmbeddings(
+        model_name=HF_EMBED_MODEL,
+        model_kwargs={"device": "cpu", "trust_remote_code": True},
+        encode_kwargs={"normalize_embeddings": True, "batch_size": 16},
+    )
 
     # Carrega documentos
     docs = load_hymns_from_db(db_path, verbose=args.verbose)

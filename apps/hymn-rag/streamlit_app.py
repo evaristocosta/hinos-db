@@ -69,7 +69,9 @@ st.markdown(
 
 
 # Inicialização do sistema RAG
-@st.cache_resource(show_spinner="Carregando sistema...")
+@st.cache_resource(
+    show_spinner="Carregando sistema...", ttl=3600
+)  # Cache expira em 1 hora
 def load_rag():
     """Carrega o sistema RAG uma única vez"""
     try:

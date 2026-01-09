@@ -26,8 +26,9 @@ from src.extract_categories import extract_filters_deterministic
 
 # ===== CONFIGURAÇÕES =====
 # Modelo de embeddings local (usa sentence-transformers)
-# HF_EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-HF_EMBED_MODEL = "mixedbread-ai/mxbai-embed-large-v1"
+# Modelo menor para economizar memória (~500MB vs ~1.7GB)
+HF_EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+# HF_EMBED_MODEL = "mixedbread-ai/mxbai-embed-large-v1"  # Modelo maior - desabilitado por uso de memória
 
 # Modelo LLM via Hugging Face InferenceClient
 HF_LLM_MODEL = "openai/gpt-oss-20b"
@@ -53,11 +54,17 @@ class HymnRAG:
         # Carrega configurações do banco
         self._load_metadata()
 
-        # Inicializa embeddings locais
+        # Inicializa embeddings locais com configurações otimizadas
         self.embeddings = HuggingFaceEmbeddings(
             model_name=HF_EMBED_MODEL,
-            model_kwargs={"device": "cpu", "trust_remote_code": True},
-            encode_kwargs={"normalize_embeddings": True},
+            model_kwargs={
+                "device": "cpu",
+                "trust_remote_code": True,
+            },
+            encode_kwargs={
+                "normalize_embeddings": True,
+                "batch_size": 16,  # Reduz uso de memória durante encoding
+            },
         )
 
         # Tenta obter o token do Streamlit secrets primeiro, depois do .env
@@ -87,6 +94,9 @@ class HymnRAG:
 
         # Configura retrievers
         self._setup_retrievers()
+
+        # BM25 será inicializado sob demanda (lazy loading)
+        self._bm25_initialized = False
 
         if self.verbose:
             print("✅ Sistema inicializado com sucesso!")
@@ -168,29 +178,37 @@ class HymnRAG:
             search_kwargs={"k": VECTOR_SEARCH_K, "fetch_k": VECTOR_FETCH_K},
         )
 
-        # BM25 retriever
-        if self.chunks:
-            stopwords = set()
-            if self.stopwords_path.exists():
-                with open(self.stopwords_path, encoding="utf-8") as f:
-                    stopwords = {
-                        line.strip().strip('"')
-                        for line in f
-                        if line.strip() and not line.startswith("#")
-                    }
+        # BM25 retriever será inicializado sob demanda (lazy loading)
+        self.bm25_retriever = None
 
-            word_re = re.compile(r"\w+")
+    def _init_bm25_if_needed(self):
+        """Inicializa BM25 sob demanda para economizar memória"""
+        if self._bm25_initialized or not self.chunks:
+            return
 
-            def bm25_tokenizer(text: str):
-                tokens = word_re.findall(text.lower())
-                return [t for t in tokens if t not in stopwords]
+        if self.verbose:
+            print("💾 Inicializando BM25 retriever...")
 
-            self.bm25_retriever = BM25Retriever.from_documents(
-                self.chunks, preprocess_func=bm25_tokenizer
-            )
-            self.bm25_retriever.k = BM25_K
-        else:
-            self.bm25_retriever = None
+        stopwords = set()
+        if self.stopwords_path.exists():
+            with open(self.stopwords_path, encoding="utf-8") as f:
+                stopwords = {
+                    line.strip().strip('"')
+                    for line in f
+                    if line.strip() and not line.startswith("#")
+                }
+
+        word_re = re.compile(r"\w+")
+
+        def bm25_tokenizer(text: str):
+            tokens = word_re.findall(text.lower())
+            return [t for t in tokens if t not in stopwords]
+
+        self.bm25_retriever = BM25Retriever.from_documents(
+            self.chunks, preprocess_func=bm25_tokenizer
+        )
+        self.bm25_retriever.k = BM25_K
+        self._bm25_initialized = True
 
     def _call_hf_api_stream(self, prompt: str, max_tokens: int = 512):
         """Chama a API Hugging Face com streaming via InferenceClient"""
@@ -315,7 +333,8 @@ class HymnRAG:
         else:
             vec_docs = self.vector_retriever.invoke(search_query)
 
-        # BM25
+        # BM25 - inicializa apenas quando necessário
+        self._init_bm25_if_needed()
         if self.bm25_retriever:
             bm25_docs = self.bm25_retriever.invoke(search_query)
             if categoria_ids or coletanea_ids:

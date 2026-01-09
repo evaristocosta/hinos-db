@@ -1,2 +1,20 @@
 [theme]
 base = "dark"
+
+[server]
+# Configurações de servidor para otimizar recursos
+maxUploadSize = 10
+enableCORS = false
+enableXsrfProtection = true
+
+[runner]
+# Configurações para economizar recursos
+magicEnabled = true
+fastReruns = true
+
+[client]
+# Configurações de interface
+showErrorDetails = false
+
+[browser]
+gatherUsageStats = false
