@@ -282,6 +282,18 @@ st.markdown(
 
 st.markdown("&#8203;")  # Espaço vertical pequeno
 
+# Feedback
+st.markdown(
+    """
+<div style="text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">
+    💬 Sugestões, dúvidas ou problemas? Entre em contato:<br>
+    📧 <a href="mailto:lucascosta74@gmail.com">lucascosta74@gmail.com</a> | 
+    📱 <a href="https://instagram.com/lucas.costa74" target="_blank">@lucas.costa74</a>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
 # Desenvolvimento
 st.markdown(
     """
