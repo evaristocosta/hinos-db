@@ -1,0 +1,79 @@
+@startuml db-schema
+hide circle
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+}
+
+class autor {
+  id : INTEGER <<PK>>
+  nome : TEXT <<NN>>
+}
+
+class autor_acao {
+  id : INTEGER <<PK>>
+  acao : TEXT <<NN>>
+}
+
+class categoria {
+  id : INTEGER <<PK>>
+  descricao : TEXT <<NN>>
+}
+
+class coletanea {
+  id : INTEGER <<PK>>
+  nome : TEXT <<NN>>
+  descricao : TEXT
+  arquivo : TEXT
+}
+
+class hino {
+  id : INTEGER <<PK>>
+  coletanea_id : INTEGER
+  categoria_id : INTEGER
+  numero : TEXT
+  nome : TEXT <<NN>>
+  texto : TEXT
+  texto_limpo : TEXT
+  texto_estruturado : TEXT
+  ano_composicao : INTEGER
+  tom : TEXT
+  date_insert : DATETIME <<NN>>
+  date_update : DATETIME <<NN>>
+}
+
+class hino_autor {
+  id : INTEGER <<PK>>
+  hino_id : INTEGER <<NN>>
+  autor_id : INTEGER <<NN>>
+  autor_acao_id : INTEGER <<NN>>
+}
+
+class hino_autor_fk {
+  hino_autor_id : INTEGER
+  autor_acao_id : INTEGER
+}
+
+class hino_de {
+  id : INTEGER <<PK>>
+  hino_id : INTEGER <<NN>>
+  numero : INTEGER
+  nome : TEXT
+  nome_traduzido : TEXT
+  texto : TEXT
+  texto_limpo_traduzido : TEXT
+}
+
+class hino_fk {
+  hino_id : INTEGER
+  coletanea_id : INTEGER
+  categoria_id : INTEGER
+}
+
+hino_autor_fk }o--|| hino_autor : hino_autor_id
+hino_autor_fk }o--|| autor_acao : autor_acao_id
+hino_fk }o--|| categoria : categoria_id
+hino_fk }o--|| hino_de : hino_id
+hino_fk }o--|| coletanea : coletanea_id
+
+@enduml

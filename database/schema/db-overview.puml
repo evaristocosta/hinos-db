@@ -1,0 +1,74 @@
+@startuml db-overview
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define primary_key(x) <b>PK: x</b>
+!define foreign_key(x) <b>FK: x</b>
+!define column(x) <b>x</b>
+!define index(x) <i>x</i>
+
+skinparam linetype ortho
+
+entity "autor" as autor {
+  * **id**: INTEGER <<PK>>
+  --
+  * **nome**: TEXT
+  **nacionalidade**: TEXT
+}
+
+entity "autor_acao" as autor_acao {
+  * **id**: INTEGER <<PK>>
+  --
+  * **acao**: TEXT
+}
+
+entity "categoria" as categoria {
+  * **id**: INTEGER <<PK>>
+  --
+  * **nome**: TEXT
+  **descricao**: TEXT
+}
+
+entity "coletanea" as coletanea {
+  * **id**: INTEGER <<PK>>
+  --
+  * **nome**: TEXT
+  * **apelido**: TEXT
+  **descricao**: TEXT
+  **arquivo**: TEXT
+}
+
+entity "hino" as hino {
+  * **id**: INTEGER <<PK>>
+  --
+  **numero**: TEXT
+  * **nome**: TEXT
+  **nome_pt**: TEXT
+  **idioma**: TEXT
+  **texto**: TEXT
+  **texto_limpo**: TEXT
+  **texto_estruturado**: TEXT
+  **tom**: TEXT
+  **texto_cifra**: TEXT
+  **cifra**: TEXT
+  **coletanea_id**: INTEGER <<FK>>
+  **categoria_id**: INTEGER <<FK>>
+  **ano_composicao**: INTEGER
+  * **date_insert**: TEXT
+  * **date_update**: TEXT
+}
+
+entity "hino_autor" as hino_autor {
+  * **id**: INTEGER <<PK>>
+  --
+  * **hino_id**: INTEGER <<FK>>
+  * **autor_id**: INTEGER <<FK>>
+  * **autor_acao_id**: INTEGER <<FK>>
+}
+
+' Relationships
+hino_autor }o--|| autor : "autor_id"
+hino_autor }o--|| hino : "hino_id"
+hino_autor }o--|| autor_acao : "autor_acao_id"
+hino }o--o| categoria : "categoria_id"
+hino }o--o| coletanea : "coletanea_id"
+
+@enduml

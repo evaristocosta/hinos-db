@@ -1,0 +1,64 @@
+# https://dbdiagram.io/dbdocs/82853?e=bHVjYXNjb3N0YTc0QGdtYWlsLmNvbQ%3D%3D
+Table "autor" {
+  "id" INT [pk, not null, increment]
+  "nome" VARCHAR(255) [not null]
+  "nacionalidade" VARCHAR(255)
+}
+
+Table "autor_acao" {
+  "id" INT [pk, not null, increment]
+  "acao" VARCHAR(255) [not null]
+}
+
+Table "categoria" {
+  "id" INT [pk, not null, increment]
+  "nome" VARCHAR(255) [not null]
+  "descricao" VARCHAR(255) 
+}
+
+Table "coletanea" {
+  "id" INT [pk, not null, increment]
+  "nome" VARCHAR(255) [not null]
+  "apelido" VARCHAR(255) [not null]
+  "descricao" TEXT
+  "arquivo" TEXT
+}
+
+Table "hino" {
+  "id" INT [pk, not null, increment]
+  "numero" VARCHAR(255)
+  "nome" VARCHAR(255) [not null]
+  "nome_pt" VARCHAR(255)
+  "idioma" VARCHAR(255)
+  "texto" TEXT
+  "texto_limpo" TEXT
+  "texto_estruturado" TEXT
+  "tom" VARCHAR(255)
+  "texto_cifra" text
+  "cifra" text
+  "coletanea_id" INT
+  "categoria_id" INT
+  "ano_composicao" INT
+  "date_insert" DATETIME [not null]
+  "date_update" DATETIME [not null]
+}
+
+Table "hino_autor" {
+  "id" INT [pk, not null, increment]
+  "hino_id" INT [not null]
+  "autor_id" INT [not null]
+  "autor_acao_id" INT [not null]
+}
+
+
+
+
+Ref: "autor"."id" < "hino_autor"."autor_id"
+
+Ref: "hino"."id" < "hino_autor"."hino_id"
+
+Ref: "autor_acao"."id" < "hino_autor"."autor_acao_id"
+
+Ref: "categoria"."id" < "hino"."categoria_id"
+
+Ref: "coletanea"."id" < "hino"."coletanea_id"
