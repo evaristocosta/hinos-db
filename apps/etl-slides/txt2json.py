@@ -1,5 +1,6 @@
 import logging
-import glob
+from glob import glob
+from pathlib import Path
 import re
 import json
 from tqdm import tqdm
@@ -12,7 +13,7 @@ logging.basicConfig(
 
 def txt2json():
     logging.info("Starting txt2json conversion...")
-    files_txt = glob.glob("slides_txt\\*.txt")
+    files_txt = glob(str(Path("slides_txt") / "*.txt"))
     logging.info(f"Files found: {files_txt}")
 
     auto_shape_pattern = r"_AUTO_SHAPE_([A-Z_]+)"
@@ -23,9 +24,7 @@ def txt2json():
         with open(file_txt, "r", encoding="utf-8") as f:
             text = f.read()
 
-        for praise in tqdm(
-            text.split("__END__"), desc="Processing praises", unit="praise"
-        ):
+        for praise in tqdm(text.split("__END__"), desc="Processing praises"):
             praise_struc = {}
             praise_struc["slides"] = []
 
@@ -79,7 +78,7 @@ def txt2json():
             # pegar nome/numero do hino antes de salvar
             praises.append(praise_struc)
 
-        new_file = "slides_json\\" + file_txt.split("\\")[1] + ".json"
+        new_file = Path("slides_json") / (Path(file_txt).stem + ".json")
         with open(new_file, "w", encoding="utf-8") as f:
             f.write(json.dumps(praises, ensure_ascii=False, indent=4))
 
