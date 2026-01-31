@@ -1,54 +1,118 @@
-# https://dbdiagram.io/dbdocs/82853?e=bHVjYXNjb3N0YTc0QGdtYWlsLmNvbQ%3D%3D
+# https://dbdocs.io/lucascosta74/Hinos-DB
+Project "Hinos DB" {
+  database_type: 'SQLite'
+  note: '''
+    Banco de dados de leitura, com informações a respeito de hinos comumente usados na Igreja Cristã Maranata.
+  '''
+}
+
 Table "autor" {
   "id" INT [pk, not null, increment]
   "nome" VARCHAR(255) [not null]
   "nacionalidade" VARCHAR(255)
+  note: '''
+    Informações a respeito dos autores dos hinos. A tabela pode crescer em termos de colunas, conforme informações relevantes forem descobertas.
+  '''
 }
+
 
 Table "autor_acao" {
   "id" INT [pk, not null, increment]
   "acao" VARCHAR(255) [not null]
+  note: '''
+    Lista dimensão com ações possíveis dos autores, ex.: composição do texto, da música, tradução, arranjo, entre outros.
+  '''
 }
+
 
 Table "categoria" {
   "id" INT [pk, not null, increment]
   "nome" VARCHAR(255) [not null]
   "descricao" VARCHAR(255) 
+  note: '''
+    Lista de categorias de acordo com a definida na Coletânea ICM de 2018.
+  '''
 }
+
 
 Table "coletanea" {
   "id" INT [pk, not null, increment]
   "nome" VARCHAR(255) [not null]
-  "apelido" VARCHAR(255) [not null]
+  "apelido" VARCHAR(255) [not null, note: '''
+    O apelido pode se repetir em mais de um registro. É como a origem é referenciada na prática (ex.: avulso, coletânea).
+  ''']
+
   "descricao" TEXT
-  "arquivo" TEXT
+  "arquivo" TEXT [note: '''
+    Nome completo do arquivo de origem, inclusive com a extensão (ex.: .pdf, .pptx).
+  ''']
+
+  note: '''
+    Lista de referência da origem dos hinos da base.
+  '''
 }
+
 
 Table "hino" {
   "id" INT [pk, not null, increment]
-  "numero" VARCHAR(255)
-  "nome" VARCHAR(255) [not null]
-  "nome_pt" VARCHAR(255)
-  "idioma" VARCHAR(255)
-  "texto" TEXT
-  "texto_limpo" TEXT
-  "texto_estruturado" TEXT
+  "numero" VARCHAR(255) [note: '''
+    Número de acordo com a coletânea da qual faz parte (origem).
+  ''']
+
+  "nome" VARCHAR(255) [not null, note: '''
+    Nome ou título do hino, com subtítulo entre parênteses quando existente.
+  ''']
+
+  "nome_pt" VARCHAR(255) [note: '''
+    Nome traduzido para o português.
+  ''']
+
+  "idioma" VARCHAR(255) [note: '''
+    Idioma em que o hino está escrito.
+  ''']
+
+  "texto" TEXT [note: '''
+    Texto usado para impressão.
+  ''']
+
+  "texto_limpo" TEXT [note: '''
+    Texto puro do hino, sem instruções (coro, instrumentos, repetir, bis) e sem repetições (ex.: coro que se repete múltiplas vezes aparece somente uma vez).
+  ''']
+
+  "texto_estruturado" TEXT [note: '''
+    Texto do hino com marcas inteligentes, como, por exemplo, de início e fim de repetições (bis).
+  ''']
+
   "tom" VARCHAR(255)
-  "texto_cifra" text
-  "cifra" text
+  "texto_cifra" text [note: '''
+    Texto com marcações de localização de cifras ("|"). Proveniente de "texto" ou "texto_estruturado".
+  ''']
+
+  "cifra" text [note: '''
+    Lista de acordes para execução do hino. Deve ser compatível com o número de marcações ("|") em "texto_cifra".
+  ''']
+
   "coletanea_id" INT
   "categoria_id" INT
   "ano_composicao" INT
   "date_insert" DATETIME [not null]
   "date_update" DATETIME [not null]
+  note: '''
+    Hinos propriamente ditos (tabela central)
+  '''
 }
+
 
 Table "hino_autor" {
   "id" INT [pk, not null, increment]
   "hino_id" INT [not null]
   "autor_id" INT [not null]
   "autor_acao_id" INT [not null]
+  note: '''
+    Tabela de relacionamento entre hino e autores, já que um hino pode ter diversos autores.
+  '''
 }
+
 
 
 
