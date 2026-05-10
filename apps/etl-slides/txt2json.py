@@ -41,7 +41,7 @@ REPETIR_RE = re.compile(
     r"REPETIR\s+(A\s+1a\s+ESTROFE\s+\dX|O\s+LOUVOR|O\s+HINO)", re.IGNORECASE
 )
 REPETIR_NO_FINAL_RE = re.compile(r"\((\d+)X\s+NO\s+FINAL\)", re.IGNORECASE)
-REPETIR_X_VEZES_RE = re.compile(r"\((\d+)X\)", re.IGNORECASE)
+REPETIR_X_VEZES_RE = re.compile(r"\(?(\d+)X\)?", re.IGNORECASE)
 BIS_RE = re.compile(
     r"\(?BIS(\s+NO\s+FINAL|\s*\dX)?\)?\s*$", re.IGNORECASE | re.MULTILINE
 )
