@@ -170,7 +170,7 @@ def tagify_text(text: str) -> str:
         return "<bis>"
 
     tagged = BIS_RE.sub(repl_bis, tagged)
-    tagged = REPETIR_X_VEZES_RE.sub(lambda m: f'<bis modo="{m.group(1)}">', tagged)
+    tagged = REPETIR_X_VEZES_RE.sub(lambda m: f'<bis tipo="{m.group(1)}x">', tagged)
     tagged = VAROES_RE.sub("<h>\n", tagged)
     tagged = SERVAS_RE.sub("<m>", tagged)
     tagged = H_RE.sub("<h>", tagged)
