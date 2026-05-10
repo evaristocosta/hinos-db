@@ -44,8 +44,7 @@ entity "hino" as hino {
   **nome_pt**: TEXT
   **idioma**: TEXT
   **texto**: TEXT
-  **texto_limpo**: TEXT
-  **texto_estruturado**: TEXT
+  **texto_processado**: TEXT
   **tom**: TEXT
   **texto_cifra**: TEXT
   **cifra**: TEXT

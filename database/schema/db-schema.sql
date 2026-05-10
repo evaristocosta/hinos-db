@@ -27,8 +27,7 @@ CREATE TABLE hino (
   numero TEXT,
   nome TEXT NOT NULL,
   texto TEXT,
-  texto_limpo TEXT,
-  texto_estruturado TEXT,
+  texto_processado TEXT,
   ano_composicao INTEGER,
   tom TEXT,
   date_insert DATETIME NOT NULL,
@@ -56,7 +55,7 @@ CREATE TABLE hino_de (
   nome TEXT,
   nome_traduzido TEXT,
   texto TEXT,
-  texto_limpo_traduzido TEXT
+  texto_processado TEXT
 );
 
 CREATE TABLE hino_fk (

@@ -34,8 +34,7 @@ class hino {
   numero : TEXT
   nome : TEXT <<NN>>
   texto : TEXT
-  texto_limpo : TEXT
-  texto_estruturado : TEXT
+  texto_processado : TEXT
   ano_composicao : INTEGER
   tom : TEXT
   date_insert : DATETIME <<NN>>
@@ -61,7 +60,7 @@ class hino_de {
   nome : TEXT
   nome_traduzido : TEXT
   texto : TEXT
-  texto_limpo_traduzido : TEXT
+  texto_processado : TEXT
 }
 
 class hino_fk {
