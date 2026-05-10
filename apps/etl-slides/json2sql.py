@@ -1,219 +1,133 @@
-import logging
-import json
-import re
-import glob
-from tqdm import tqdm
+"""Convert JSON hymn files into SQL migration files.
 
+Each input JSON file produces one SQL file in the output directory.
+"""
+
+from argparse import ArgumentParser
+from glob import glob
+import json
+import logging
+from pathlib import Path
+from typing import Iterable, List
+
+LOGGER = logging.getLogger(__name__)
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
-erros_conhecidos = [
-    "ABENÇOA-NOS SENHOR, DERRAMA SOBRE NÓS TUA PAZ ABENÇOA-NOS SENHOR, DERRAMA SOBRE NÓS TEU AMOR.",  # indice extra
-    "MEU JESUS, SALVADOR,  OUTRO IGUAL NÃO HÁ. TODOS OS DIAS QUERO LOUVAR  AS MARAVILHAS DE TEU AMOR. CONSOLO, ABRIGO,  FORÇA E REFÚGIO É O SENHOR. COM TODO O MEU SER,  COM TUDO O QUE SOU,  SEMPRE TE ADORAREI.",  # pedaco de louvor
-    "PODES CLAMAR, PODES CHORAR, EU ESTAREI PRONTO PRA TE AJUDAR, E SE O CORAÇÃO DESFALECER, CONFIA EM MIM SOU JESUS  E TE FAÇO VENCER.",  # pedaco de louvor
-    "AO CORDEIRO GLÓRIA E HONRA,  SALVOS NÃO CESSEIS DE DAR. GLÓRIA, HONRA SEMPRE A DEUS ENTOAREI!  AMÉM!",  # indice extra
-]
-TAGS_LITERAIS = [
-    "TODOS",
-    "M",
-    "H",
-    "T",
-    "BIS",
-    "VARÕES",
-    "SERVAS",
-]
-TAGS_CONTROLE = [
-    "ÍNDICE",
-    "CORO (2X)",
-    "\n\nCORO",
-    "CORO\n",
-    "1X",
-    "2X",
-    "3X",
-    "4X",
-    "()",
-    "(TODOS)",
-    "(M)",
-    "(H)",
-    "(T)",
-    "(BIS)",
-    "(VARÕES)",
-    "(SERVAS)",
-    "REPETIR O LOUVOR",
-    "REPETIR 1ª ESTROFE",
-    "REPETIR A 1ª ESTROFE",
-    "REPETIR 2ª ESTROFE",
-    "REPETIR A 2ª ESTROFE",
-    "REPETIR ESTROFE",
-    "REPETIR A ESTROFE",
-    "FINAL:",
-    "BIS NO FINAL",
-    "IGREJA CRISTÃ MARANATA",
-    "ATUALIZAÇÃO",
-    "\nINSTRUMENTOS",
-]
+INSERT_COLUMNS = "numero, nome, nome_pt, texto, texto_processado, coletanea_id, idioma, date_insert, date_update"
 
 
-def get_texts(d):
-    if isinstance(d, dict):
-        for k, v in d.items():
-            if k == "text":
-                yield v
-            else:
-                yield from get_texts(v)
-    elif isinstance(d, list):
-        for v in d:
-            yield from get_texts(v)
+def find_json_files(input_pattern: str) -> List[Path]:
+    return [Path(path) for path in glob(input_pattern)]
 
 
-def return_possible_title(texts):
-    possible_title = [
-        text
-        for text in texts
-        if all(opt not in text.upper() for opt in TAGS_CONTROLE)
-        and text.strip() != ""
-        and text.upper() not in TAGS_LITERAIS
-    ]
-    if possible_title:
-        min_string = min(possible_title, key=len)
-        title_index = texts.index(min_string)
-        title = min_string.upper().replace("\n", " ")
-        if title not in erros_conhecidos:
-            return title, title_index
-    return None, None
+def load_json_file(file_path: Path) -> list:
+    with file_path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
 
 
-def set_text_clean(texts_wo_title):
-    texts_clean = [re.sub(r"[ \t]{2,}", " ", text) for text in texts_wo_title]
-    texts_clean = [line for line in texts_clean if line not in TAGS_LITERAIS]
-    new_texts_clean = []
-    for line in texts_clean:
-        for tag in TAGS_CONTROLE:
-            line = line.upper().replace(tag, "")
-        line = line.strip()
-        if line:
-            new_texts_clean.append(line)
-    texts_clean = new_texts_clean
-    coro_regex = re.compile(r"^CORO\s*")
-    texts_clean = [line for line in texts_clean if not coro_regex.match(line)]
-    texts_clean = " ".join(texts_clean)
-    texts_clean = texts_clean.replace("\n", " ")
-    texts_clean = re.sub(r"[ \t]{2,}", " ", texts_clean)
-    # remove all double quotes
-    texts_clean = texts_clean.replace("“", "")
-    texts_clean = texts_clean.replace("”", "")
-    texts_clean = texts_clean.replace('"', "")
-    return texts_clean
+def escape_sql_literal(value: str) -> str:
+    return value.replace("'", "''").replace("\n", "\\n")
 
 
-def set_text_full(texts_wo_title):
-    texts_full = [
-        line
-        for line in texts_wo_title
-        if line.upper() != "ÍNDICE" and line.strip() != ""
-    ]
-    texts_full = "\n\n".join(texts_full)
-    texts_full = texts_full.replace("\n\nBIS", "\nBIS")
-    texts_full = texts_full.replace('"', "'")
-    return texts_full
+def format_numero(value) -> str:
+    if value is None:
+        return "NULL"
+    value_str = str(value).strip()
+    if value_str.isdigit():
+        return int(value_str)
+    return "NULL"
 
 
-def return_number(title):
-    if title:
-        for word in title.split(" "):
-            match = re.search(r"\d+", word)
-            if match:
-                numero = match.group()
-                # remove number from title
-                title_clean = title.replace(match.group(), "").strip()
-                # check if string starts with hifen and remove it
-                if title_clean.startswith("-"):
-                    title_clean = title_clean[1:].strip()
-                else:
-                    title_clean = title_clean.strip()
+def build_insert_statement(hino: dict, coletanea_id: int) -> str:
+    numero = format_numero(hino.get("numero"))
+    nome = escape_sql_literal(str(hino.get("nome", "")))
+    texto = escape_sql_literal(str(hino.get("texto", "")))
+    texto_processado = escape_sql_literal(str(hino.get("texto_processado", "")))
 
-                return numero, title_clean
-            else:
-                return "null", title
-    return "null", None
-
-
-def process_structure(praises):
-    new_structure = []
-    for praise in tqdm(praises, desc="Processing praises", unit="praise"):
-        texts = list(get_texts(praise))
-
-        if not texts:
-            continue
-
-        # clean double or more spaces in string array
-        texts = [text.replace("–", "-") for text in texts]
-
-        title, title_index = return_possible_title(texts)
-        numero, title_clean = return_number(title)
-
-        texts_wo_title = texts.copy()
-        if title_index is not None:
-            texts_wo_title.pop(title_index)
-
-        texts_full = set_text_full(texts_wo_title)
-        texts_clean = set_text_clean(texts_wo_title)
-
-        new_structure.append(
-            {
-                "numero": numero,
-                "nome": title_clean if title_clean is not None else "null",
-                "texto": texts_full,
-                "texto_limpo": texts_clean,
-            }
-        )
-
-    return new_structure
+    return (
+        f"INSERT INTO hino ({INSERT_COLUMNS}) VALUES ("
+        f"{numero}, "
+        f"'{nome}', "
+        f"'{nome}', "
+        f"'{texto}', "
+        f"'{texto_processado}', "
+        f"{coletanea_id}, "
+        f"'PT-BR', "
+        f"CURRENT_TIMESTAMP, CURRENT_TIMESTAMP"
+        f");\n"
+    )
 
 
-def json2sql(inicio: int = 3):
-    logging.info("Starting json2sql conversion...")
-    files_json = glob.glob("slides_json\\*.json")
-    logging.info(f"Files found: {files_json}")
-
-    for index, file in enumerate(files_json):
-        logging.info(f"Processing file: {file}")
-        file_name = (
-            "00"
-            + str(index + inicio)
-            + "_add_"
-            + file.split("\\")[1].split("pptx")[0].lower().replace(" ", "_")
-            + "sql"
-        )
-
-        with open(file, "r", encoding="utf-8") as f:
-            louvores = json.load(f)
-
-        louvores_estruturados = process_structure(louvores)
-        with open("..\\..\\database\\migrations\\" + file_name, "w", encoding="utf-8") as f:
-            for hino in louvores_estruturados:
-                text = (
-                    "INSERT INTO hino (numero, nome, texto, texto_limpo, coletanea_id, date_insert, date_update) VALUES ('"
-                    + hino["numero"]
-                    + "', '"
-                    + hino["nome"]
-                    + "', '"
-                    + hino["texto"].replace("\n", "\\n").replace("'", "''")
-                    + "', '"
-                    + hino["texto_limpo"].replace("'", "''")
-                    + "', "
-                    + str(index + 1)
-                    + ", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);\n"
-                )
-                f.write(text)
+def build_output_name(file_path: Path, inicio: int, index: int) -> str:
+    prefix = str(index + inicio).zfill(3)
+    stem = file_path.stem.lower().replace(" ", "-")
+    return f"{prefix}-add-{stem}.sql"
 
 
-def main():
-    json2sql()
+def write_sql_file(
+    output_path: Path, file_name: str, louvores: list, coletanea_id: int
+) -> Path:
+    output_path.mkdir(parents=True, exist_ok=True)
+    destination = output_path / file_name
+
+    with destination.open("w", encoding="utf-8") as handle:
+        for hino in louvores:
+            handle.write(build_insert_statement(hino, coletanea_id))
+
+    return destination
+
+
+def json2sql(
+    inicio: int = 3,
+    input_pattern: str = "slides_json\\*.json",
+    output_path: str = "..\\..\\database\\migrations",
+) -> List[Path]:
+    LOGGER.info("Starting json2sql conversion")
+    files_json = find_json_files(input_pattern)
+    LOGGER.info("Files found: %s", [str(path) for path in files_json])
+
+    written_files: List[Path] = []
+    output_dir = Path(output_path)
+
+    for index, file_path in enumerate(files_json):
+        file_name = build_output_name(file_path, inicio, index)
+        louvores = load_json_file(file_path)
+        written_files.append(write_sql_file(output_dir, file_name, louvores, index + 1))
+        LOGGER.info("Wrote %s", written_files[-1])
+
+    return written_files
+
+
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = ArgumentParser(description="Convert JSON hymn files to SQL migrations")
+    parser.add_argument(
+        "--inicio",
+        type=int,
+        default=3,
+        help="Starting sequence number for migration files",
+    )
+    parser.add_argument(
+        "--input-pattern",
+        default="slides_json\\*.json",
+        help="Glob pattern for input JSON files",
+    )
+    parser.add_argument(
+        "--output-path",
+        default="..\\..\\database\\migrations",
+        help="Directory for generated SQL files",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    json2sql(
+        inicio=args.inicio,
+        input_pattern=args.input_pattern,
+        output_path=args.output_path,
+    )
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
