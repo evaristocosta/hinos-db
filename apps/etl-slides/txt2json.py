@@ -41,7 +41,9 @@ REPETIR_RE = re.compile(
     r"REPETIR\s+(A\s+1a\s+ESTROFE\s+\dX|O\s+LOUVOR|O\s+HINO)", re.IGNORECASE
 )
 REPETIR_NO_FINAL_RE = re.compile(r"\((\d+)X\s+NO\s+FINAL\)", re.IGNORECASE)
-REPETIR_X_VEZES_RE = re.compile(r"\(?(\d+)X\)?", re.IGNORECASE)
+REPETIR_X_VEZES_RE = re.compile(
+    r"(?<![>\"\'a-zA-Z])\(?(\d+)X\)?(?![\"\'<a-zA-Z])", re.IGNORECASE
+)
 BIS_RE = re.compile(
     r"\(?BIS(\s+NO\s+FINAL|\s*\dX)?\)?\s*$", re.IGNORECASE | re.MULTILINE
 )
@@ -157,7 +159,7 @@ def tagify_text(text: str) -> str:
 
     tagged = CORS_RE.sub(repl_coro, tagged)
     tagged = REPETIR_RE.sub(
-        lambda m: f'<repetir tipo="{_normalize_tag_value(m.group(1))}x">', tagged
+        lambda m: f'<repetir tipo="{_normalize_tag_value(m.group(1))}">', tagged
     )
     tagged = INSTRUMENTOS_RE.sub("\n<instrumentos>\n", tagged)
     tagged = FINAL_RE.sub("\n<final>", tagged)
@@ -170,7 +172,7 @@ def tagify_text(text: str) -> str:
         return "<bis>"
 
     tagged = BIS_RE.sub(repl_bis, tagged)
-    tagged = REPETIR_X_VEZES_RE.sub(lambda m: f'<bis tipo="{m.group(1)}x">', tagged)
+    tagged = REPETIR_X_VEZES_RE.sub(lambda m: f'<bis tipo="{m.group(1)}">', tagged)
     tagged = VAROES_RE.sub("<h>\n", tagged)
     tagged = SERVAS_RE.sub("<m>", tagged)
     tagged = H_RE.sub("<h>", tagged)
@@ -178,7 +180,7 @@ def tagify_text(text: str) -> str:
     tagged = M_RE.sub("<m>", tagged)
     tagged = T_RE.sub("<t>", tagged)
     tagged = REPETIR_NO_FINAL_RE.sub(
-        lambda m: f'<repetir tipo="no-final,{m.group(1)}x">', tagged
+        lambda m: f'<repetir tipo="no-final,{m.group(1)}">', tagged
     )
 
     return tagged
