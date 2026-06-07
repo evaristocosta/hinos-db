@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from collections import Counter
 from functools import lru_cache
-from typing import Optional 
+from typing import Optional
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -22,7 +22,6 @@ from transformers import pipeline
 import torch
 from scipy.stats import entropy
 from scipy.spatial.distance import euclidean
-
 
 # ============================================================================
 # MODEL LOADERS - Lazy loading com cache para evitar recarregamento
@@ -210,7 +209,21 @@ def process_tokens(hinos_input: pd.DataFrame, assets_folder: Path) -> pd.DataFra
     all_tokens = []
     all_tokens_no_stops = []
 
+    # Remoção de tags, novas linhas
+    hinos_analise["texto_limpo"] = (
+        hinos_analise["texto_processado"]
+        .astype(str)
+        .str.replace(r"<.*?>", "", regex=True)
+    )
+    hinos_analise["texto_limpo"] = hinos_analise["texto_limpo"].str.replace(
+        r"\n", " ", regex=False
+    )
+    hinos_analise["texto_limpo"] = hinos_analise["texto_limpo"].str.replace(
+        r"\s+", " ", regex=True
+    )
+
     for hino in tqdm(hinos_analise.to_dict("records")):
+        # Tokenização usando regex para extrair apenas palavras
         tokens = nltk.tokenize.regexp_tokenize(hino["texto_limpo"], r"\w+")
         # Replace "MINH" com "MINHA" usando regex
         tokens = [
@@ -529,6 +542,7 @@ def process_emotions(
     hinos_analise["score_dominante_sem_neutral"] = scores_dominantes_sem_neutral
 
     print("Calculando diversidade e concentração emocional...")
+
     def calcular_diversidade_emocional(emocoes):
         """Calcula a entropia de Shannon para medir diversidade emocional"""
         if not emocoes:
@@ -567,6 +581,7 @@ def process_emotions(
     )
 
     print("Calculando scores líquidos e categorias emocionais...")
+
     def calcular_score_liquido(emocoes):
         """Calcula a diferença entre emoção dominante (não-neutral) e neutral"""
         if not emocoes:

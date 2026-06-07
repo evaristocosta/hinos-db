@@ -5,7 +5,8 @@ import pandas as pd
 
 def extract(coletanea_id: int | None = None) -> pd.DataFrame:
     # Cria engine para acessar o banco de dados local (assets/database.db)
-    engine = create_engine(f"sqlite:///{config.DATABASE_PATH}")
+    engine_path = f"sqlite:///{config.DATABASE_PATH}"
+    engine = create_engine(engine_path)
     connection = engine.connect()
 
     # Monta a query para buscar hinos e suas categorias
@@ -15,16 +16,15 @@ def extract(coletanea_id: int | None = None) -> pd.DataFrame:
 
     sql_query = f"""
     select
-        numero,
-        nome,
-        texto,
-        texto_limpo,
-        categoria_id,
-        c.descricao as categoria,
-        coletanea_id
+        h.numero,
+        h.nome,
+        h.texto,
+        h.texto_processado,
+        h.categoria_id,
+        c.nome as categoria
     from 
-        hino
-        left join categoria c on c.id = categoria_id
+        hino h
+        left join categoria c on c.id = h.categoria_id
     {where_clause}
     """
 
@@ -32,7 +32,7 @@ def extract(coletanea_id: int | None = None) -> pd.DataFrame:
     hinos_analise = pd.read_sql_query(sql_query, connection)
 
     # Corrige valores nulos e converte número para inteiro
-    hinos_analise.loc[hinos_analise["numero"] == "null", "numero"] = 0
+    hinos_analise = hinos_analise.fillna({"numero": "0"})
     hinos_analise["numero_int"] = hinos_analise["numero"].astype(int)
 
     # Remove coluna antiga, renomeia e ordena

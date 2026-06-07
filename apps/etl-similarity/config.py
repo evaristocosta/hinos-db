@@ -11,7 +11,7 @@ from pathlib import Path
 # ============================================================================
 
 # Diretório raiz do projeto
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 # Diretório de assets
 # Observação: os assets (stopwords, saídas de similaridade, etc.)
@@ -54,8 +54,8 @@ UMAP_SENT_PARAMS = {
 }
 
 # Número de clusters para KMeans
-N_CLUSTERS_WORD = 10
-N_CLUSTERS_SENT = 9
+N_CLUSTERS_WORD = 8
+N_CLUSTERS_SENT = 10
 
 # Parâmetros do classificador de emoções
 EMOTION_CLASSIFIER_PARAMS = {
