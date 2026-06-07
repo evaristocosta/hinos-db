@@ -10,9 +10,11 @@
 - slide 1 removido
 - slide 22 corrigido (linha duplicada removida, "HUMILDE E FRACO SOU,")
 - slide 1196 corrigido (OUVIDOSSEMPRE -> OUVIDOS SEMPRE)
+- slide 668 removido (duplicado)
 
 03.COLETÂNEA DE CIAS_2021 TV.pptx
 - slides 1-3 removidos
+- slide 24 corrigido (número do hino corrigido, 10 - 12)
 
 Louvores Avulsos CIAs 2022 - COM ANIMAÇÃO.pptx
 - slides 1-2 removidos
