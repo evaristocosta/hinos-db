@@ -30,7 +30,7 @@ Coletânea, utilizando técnicas de Ciência de Dados e Processamento de Linguag
 
 Todo o código-fonte e os notebooks Jupyter utilizados no desenvolvimento estão disponíveis no 
 **GitHub** no repositório [evaristocosta/hinos-db](https://github.com/evaristocosta/hinos-db). 
-Os notebooks de análise encontram-se na pasta `eda1/notebooks/`, onde você pode acompanhar 
+Os notebooks de análise encontram-se na pasta `apps/analytics/eda-01/notebooks/`, onde você pode acompanhar 
 passo a passo todo o processo de exploração e análise dos dados.
 
 ## 📋 Sumário

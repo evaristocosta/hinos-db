@@ -163,7 +163,9 @@ else:
     )
 
     chart = (box + mean_rule + mean_label).properties(
-        title="Relação Entre Número de Palavras e Categoria", width="container"
+        title="Relação Entre Número de Palavras e Categoria",
+        width="container",
+        height=600,
     )
 
     st.altair_chart(chart)

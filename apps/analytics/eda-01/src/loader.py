@@ -6,7 +6,19 @@ from pathlib import Path
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    database_path = Path(__file__).parent.parent / "assets" / "database.db"
+    database_path = (
+        Path(__file__).parent.parent.parent.parent.parent / "database" / "database.db"
+    )
+    if not database_path.exists():
+        database_path = Path(__file__).parent.parent / "assets" / "database.db"
+        if not database_path.exists():
+            st.error(
+                "Database file not found. Please ensure the database is available in the expected location."
+            )
+            raise FileNotFoundError(
+                f"Database file not found at {database_path}. Please ensure the database is available."
+            )
+
     engine = create_engine(f"sqlite:///{database_path}")
 
     # Connect to the database
@@ -14,17 +26,18 @@ def load_data() -> pd.DataFrame:
 
     sql_query = """
     select
-        numero,
-        nome,
-        texto,
-        texto_limpo,
-        categoria_id,
-        c.descricao as categoria
+        h.id,
+        h.numero,
+        h.nome,
+        h.texto,
+        h.texto_processado,
+        h.categoria_id,
+        c.nome as categoria
     from 
-        hino
-        left join categoria c on c.id = categoria_id
+        hino h
+        left join categoria c on c.id = h.categoria_id
     where
-        coletanea_id = 1
+        h.coletanea_id = 1 -- hinos da coletanea padrao
     """
 
     hinos_analise = pd.read_sql_query(sql_query, connection)
@@ -35,7 +48,9 @@ def load_data() -> pd.DataFrame:
 def hinos_processados() -> pd.DataFrame:
     pkl_path = Path(__file__).parent.parent / "assets" / "hinos_analise_final.pkl"
     hinos_processados = pd.read_pickle(pkl_path)
-    hinos_processados = hinos_processados.query("coletanea_id == 1").drop(columns=["coletanea_id"])
+    hinos_processados = hinos_processados.query("coletanea_id == 1").drop(
+        columns=["coletanea_id"]
+    )
     return hinos_processados
 
 

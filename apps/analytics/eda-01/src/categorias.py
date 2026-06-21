@@ -3,7 +3,7 @@ import altair as alt
 from src.loader import hinos_processados
 
 hinos = hinos_processados()
-hinos["numero"] = hinos.index
+# hinos["numero"] = hinos.index
 
 categorias_count = (
     hinos[["categoria_abr", "numero"]]

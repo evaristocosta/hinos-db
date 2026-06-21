@@ -8,7 +8,7 @@ hinos: pd.DataFrame = hinos_processados()
 similarity_titles, _, _, _ = similarity_matrices()
 
 # separa dados de interesse
-hinos["numero"] = hinos.index
+# hinos["numero"] = hinos.index
 hinos_analise = (
     hinos[["numero", "nome", "categoria_abr"]]
     .rename(columns={"numero": "Nº", "nome": "Nome", "categoria_abr": "Categoria"})

@@ -12,6 +12,9 @@ num_selecionado = st.sidebar.text_input("Número:")
 nome_filtro = st.sidebar.text_input("Título:")
 texto_filtro = st.sidebar.text_input("Texto:")
 
+# Aplica quebra de linha
+hinos["texto"] = hinos["texto"].str.replace(r"\\n", "\n", regex=True)
+
 # Aplicar os filtros
 hinos_filtrado = hinos.copy()
 if num_selecionado:
@@ -27,7 +30,7 @@ if nome_filtro:
 
 if texto_filtro:
     hinos_filtrado = hinos_filtrado[
-        hinos_filtrado["texto_limpo"].str.contains(texto_filtro, case=False, na=False)
+        hinos_filtrado["texto"].str.contains(texto_filtro, case=False, na=False)
     ]
 
 # Filtro por categoria
@@ -55,14 +58,14 @@ st.dataframe(
             "numero",
             "nome",
             "categoria",
-            "texto_limpo",
+            "texto",
         ]
     ].rename(
         columns={
             "numero": "Nº",
             "nome": "Título",
             "categoria": "Categoria",
-            "texto_limpo": "Texto",
+            "texto": "Texto",
         }
     ),
     hide_index=True,
