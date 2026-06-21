@@ -190,7 +190,7 @@ def process_tokens(hinos_input: pd.DataFrame, assets_folder: Path) -> pd.DataFra
     """
     hinos_analise = hinos_input.copy()
 
-    hinos_analise = hinos_analise.set_index("numero")
+    hinos_analise = hinos_analise.set_index("id")
     hinos_analise["categoria_abr"] = hinos_analise["categoria"].apply(
         lambda x: x[:13] + "..." if isinstance(x, str) and len(x) > 15 else x
     )
@@ -215,10 +215,16 @@ def process_tokens(hinos_input: pd.DataFrame, assets_folder: Path) -> pd.DataFra
         .astype(str)
         .str.replace(r"<.*?>", "", regex=True)
     )
+    hinos_analise["texto_unico"] = hinos_analise["texto_limpo"].apply(
+        lambda x: " ".join(list(dict.fromkeys(x.split(r"\n"))))
+    )
     hinos_analise["texto_limpo"] = hinos_analise["texto_limpo"].str.replace(
         r"\n", " ", regex=False
     )
     hinos_analise["texto_limpo"] = hinos_analise["texto_limpo"].str.replace(
+        r"\s+", " ", regex=True
+    )
+    hinos_analise["texto_unico"] = hinos_analise["texto_unico"].str.replace(
         r"\s+", " ", regex=True
     )
 
@@ -229,8 +235,14 @@ def process_tokens(hinos_input: pd.DataFrame, assets_folder: Path) -> pd.DataFra
         tokens = [
             nltk.re.sub(r"^minh$", "minha", palavra.lower()) for palavra in tokens
         ]
+        # versão de tokens sem repetição
+        tokens_unico = nltk.tokenize.regexp_tokenize(hino["texto_unico"], r"\w+")
+        # Replace "MINH" com "MINHA" usando regex
+        tokens_unico = [
+            nltk.re.sub(r"^minh$", "minha", palavra.lower()) for palavra in tokens_unico
+        ]
         tokens_no_stops = [
-            palavra for palavra in tokens if palavra.lower() not in stopwords
+            palavra for palavra in tokens_unico if palavra.lower() not in stopwords
         ]
         # remover pontuacao
         tokens = [palavra for palavra in tokens if palavra.isalpha()]

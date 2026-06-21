@@ -60,7 +60,11 @@ def pipeline(
     try:
         stopwords_path = config.SHARED_DIR / "assets"
         hinos_tokens = processes.process_tokens(hinos_extract, stopwords_path)
-        tracker.end(step, success=True, extra={"rows": len(hinos_tokens)})
+        tracker.end(
+            step,
+            success=True,
+            extra={"rows": len(hinos_tokens), "columns": list(hinos_tokens.columns)},
+        )
         logger.info("[process_tokens] Tokens processed.")
     except Exception as e:
         tracker.fail(step, str(e))
@@ -73,7 +77,11 @@ def pipeline(
     logger.info("[process_ngrams] Processing n-grams...")
     try:
         hinos_ngrams = processes.process_ngrams(hinos_tokens)
-        tracker.end(step, success=True, extra={"rows": len(hinos_ngrams)})
+        tracker.end(
+            step,
+            success=True,
+            extra={"rows": len(hinos_ngrams), "columns": list(hinos_ngrams.columns)},
+        )
         logger.info("[process_ngrams] N-grams processed.")
     except Exception as e:
         tracker.fail(step, str(e))
@@ -100,7 +108,14 @@ def pipeline(
     try:
         model_path = config.SHARED_DIR / "models" / config.FASTTEXT_MODEL_NAME
         hinos_word_emb = processes.process_word_embeddings(hinos_ngrams, model_path)
-        tracker.end(step, success=True, extra={"rows": len(hinos_word_emb)})
+        tracker.end(
+            step,
+            success=True,
+            extra={
+                "rows": len(hinos_word_emb),
+                "columns": list(hinos_word_emb.columns),
+            },
+        )
         logger.info("[process_word_embeddings] Word embeddings computed.")
     except Exception as e:
         tracker.fail(step, str(e))
@@ -130,7 +145,14 @@ def pipeline(
         hinos_sent_emb = processes.process_sentence_embeddings(
             hinos_word_emb, config.SENTENCE_TRANSFORMER_MODEL
         )
-        tracker.end(step, success=True, extra={"rows": len(hinos_sent_emb)})
+        tracker.end(
+            step,
+            success=True,
+            extra={
+                "rows": len(hinos_sent_emb),
+                "columns": list(hinos_sent_emb.columns),
+            },
+        )
         logger.info("[process_sentence_embeddings] Sentence embeddings computed.")
     except Exception as e:
         tracker.fail(step, str(e))
@@ -162,7 +184,14 @@ def pipeline(
         hinos_emotions = processes.process_emotions(
             hinos_sent_emb, config.EMOTION_MODEL
         )
-        tracker.end(step, success=True, extra={"rows": len(hinos_emotions)})
+        tracker.end(
+            step,
+            success=True,
+            extra={
+                "rows": len(hinos_emotions),
+                "columns": list(hinos_emotions.columns),
+            },
+        )
         logger.info("[process_emotions] Emotions processed.")
     except Exception as e:
         tracker.fail(step, str(e))
@@ -175,7 +204,11 @@ def pipeline(
     try:
         similarities.similarity_emotions(hinos_emotions, assets_folder)
         artifact = assets_folder / "similarity_matrix_emotions.pkl"
-        tracker.end(step, success=True, extra={"artifact": str(artifact)})
+        tracker.end(
+            step,
+            success=True,
+            extra={"artifact": str(artifact), "columns": list(hinos_emotions.columns)},
+        )
         logger.info("[similarity_emotions] Emotion similarity saved.")
     except Exception as e:
         tracker.fail(step, str(e))
@@ -189,7 +222,11 @@ def pipeline(
     try:
         out_path = assets_folder / "hinos_analise_final.pkl"
         hinos_emotions.to_pickle(out_path)
-        tracker.end(step, success=True, extra={"artifact": str(out_path)})
+        tracker.end(
+            step,
+            success=True,
+            extra={"artifact": str(out_path), "columns": list(hinos_emotions.columns)},
+        )
         logger.info("[final_pickle] Final dataframe saved.")
     except Exception as e:
         tracker.fail(step, str(e))

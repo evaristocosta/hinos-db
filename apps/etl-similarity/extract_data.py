@@ -16,11 +16,13 @@ def extract(coletanea_id: int | None = None) -> pd.DataFrame:
 
     sql_query = f"""
     select
+        h.id,
         h.numero,
         h.nome,
         h.texto,
         h.texto_processado,
         h.categoria_id,
+        h.coletanea_id,
         c.nome as categoria
     from 
         hino h

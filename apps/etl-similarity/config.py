@@ -55,7 +55,7 @@ UMAP_SENT_PARAMS = {
 
 # Número de clusters para KMeans
 N_CLUSTERS_WORD = 8
-N_CLUSTERS_SENT = 10
+N_CLUSTERS_SENT = 11
 
 # Parâmetros do classificador de emoções
 EMOTION_CLASSIFIER_PARAMS = {
