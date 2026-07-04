@@ -397,7 +397,7 @@ def process_sentence_embeddings(
     Gera sentence embeddings usando SentenceTransformer e aplica topic modeling.
 
     Args:
-        hinos_input: DataFrame com coluna 'texto_limpo'.
+        hinos_input: DataFrame com coluna 'texto_unico'.
         model_name: Nome opcional do modelo SentenceTransformer.
 
     Returns:
@@ -415,7 +415,7 @@ def process_sentence_embeddings(
     # cria embeddings diretamente para cada hino (texto inteiro)
     print("Computando sentence embeddings...")
     embeddings = model_sent.encode(
-        hinos_analise["texto_limpo"].tolist(), show_progress_bar=True
+        hinos_analise["texto_unico"].tolist(), show_progress_bar=True
     )
     X_sent = np.array(embeddings)
     hinos_analise["sent_embeddings"] = list(X_sent)
@@ -439,7 +439,7 @@ def process_sentence_embeddings(
 
     # Treinar modelo
     print("Treinando BERTopic...")
-    topics, _ = topic_model.fit_transform(hinos_analise["texto_limpo"])
+    topics, _ = topic_model.fit_transform(hinos_analise["texto_unico"])
 
     # Associar tópicos ao DataFrame
     hinos_analise["BERT_topic"] = topics
