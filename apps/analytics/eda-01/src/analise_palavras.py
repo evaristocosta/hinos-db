@@ -7,7 +7,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import plotly.express as px
 
-
 st.title("✒️ Análise de palavras")
 """
 Nesta seção, exploramos as palavras presentes nos hinos através de n-gramas e análise de 
@@ -170,6 +169,7 @@ similarity_df_tfidf = pd.DataFrame(
 
 # Filtrar a matriz conforme os índices atuais de hinos_analise
 sim_filtered = similarity_df_tfidf.loc[hinos_analise.index, hinos_analise.index]
+sim_filtered = sim_filtered.sort_index(axis=0).sort_index(axis=1)
 
 fig = px.imshow(
     sim_filtered,
@@ -178,16 +178,16 @@ fig = px.imshow(
     labels=dict(x="Hinos", y="Hinos", color="Similaridade"),
     width=600,
     height=600,
-    color_continuous_scale="GnBu",
+    color_continuous_scale="Cividis",
 )
 st.plotly_chart(fig)
 
 """
-É possível notar que muitos hinos apresentam baixa similaridade entre si, refletindo a diversidade temática e linguística
-da coletânea. No entanto, há grupos de hinos com alta similaridade, sugerindo temas ou expressões comuns. 
-Em especial, hinos das categorias "VOLTA DE JESUS E ETERNIDADE", "LOUVOR" e "SALMOS DE LOUVOR" parecem formar agrupamentos 
-mais coesos. Também é perceptível alguma similaridade entre os hinos da categoria de "CLAMOR", possivelmente devido
-a compartilharem expressões sobre o clamor pelo sangue de Jesus.
+É até difícil de notar alguma similaridade entre os hinos, uma vez que a grande maioria apresentam baixa similaridade entre si, 
+refletindo a diversidade temática e linguística da coletânea. No entanto, há grupos de hinos com alta similaridade, sugerindo 
+temas ou expressões comuns. Em especial, hinos das categorias "VOLTA DE JESUS E ETERNIDADE", "LOUVOR" e "SALMOS DE LOUVOR" 
+parecem formar agrupamentos mais coesos. Também é perceptível alguma similaridade entre os hinos da categoria de "CLAMOR", 
+possivelmente devido a compartilharem expressões sobre o clamor pelo sangue de Jesus.
 Esses agrupamentos podem indicar subtemas ou estilos compartilhados entre certos hinos, o que pode ser útil para análises 
 mais aprofundadas sobre padrões de composição ou conteúdo.
 """

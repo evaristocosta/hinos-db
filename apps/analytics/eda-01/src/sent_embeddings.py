@@ -41,7 +41,7 @@ if categorias_selecionadas:
 Como na análise de embeddings de palavras, aqui apresentamos a matriz de similaridade entre os hinos,
 mas agora utilizando os embeddings de frases. 
 
-Para gerar os embeddings de frases, utilizamos o modelo "[rufimelo/Legal-BERTimbau-sts-base](https://huggingface.co/rufimelo/Legal-BERTimbau-sts-base)", 
+Para gerar os embeddings de frases, utilizamos o modelo "[rufimelo/Legal-BERTimbau-sts-base-ma-v2](https://huggingface.co/rufimelo/Legal-BERTimbau-sts-base-ma-v2)", 
 que é baseado na arquitetura BERT e foi ajustado para tarefas de similaridade semântica em português brasileiro.
 A similaridade por sua vez, é calculada usando a similaridade do cosseno.
 
@@ -58,6 +58,7 @@ st.warning(
 # restringe a matriz de similaridade aos hinos atualmente no dataframe (caso haja filtro)
 idx = hinos_analise.index.tolist()
 sim_sub = similarity_sentence.loc[idx, idx]
+sim_sub = sim_sub.sort_index(axis=0).sort_index(axis=1)
 
 fig = px.imshow(
     sim_sub,

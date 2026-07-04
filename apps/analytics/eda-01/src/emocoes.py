@@ -128,7 +128,7 @@ Quatro correlações notáveis emergem da análise: tristeza ("sadness") e luto 
 fortemente correlacionados -- a maior correlação observada -- sugerindo que hinos que 
 expressam tristeza frequentemente também abordam temas de perda e luto. Segundo, confusão ("confusion")
 e curiosidade ("curiosity") mostram uma correlação positiva significativa, seguido de
-alegria ("joy") e alívio ("relief"), e medo ("fear") com nervosismo ("nervousness").
+medo ("fear") com nervosismo ("nervousness"), e alegria ("joy") e alívio ("relief").
 
 É possível notar algumas linhas também, indicando que certas emoções têm correlações mais fortes,
 ou inversas entre si. É o caso de embaraço ("embarrassment"), que tem correlações positivas
@@ -211,17 +211,14 @@ fig.update_layout(height=500, showlegend=False)
 st.plotly_chart(fig, width="stretch")
 
 
-# media de entropia: 1.189
-# media de concentração: 0.639
-
-"""
+f"""
 A entropia parece ter uma distribuição aproximadamente normal, com a maioria dos hinos
-apresentando uma diversidade emocional moderada. A média de entropia é de 1.189,
+apresentando uma diversidade emocional moderada. A média de entropia é de {hinos_analise['diversidade_emocional'].mean():.3f},
 indicando que os hinos tendem a expressar uma variedade razoável de emoções.
 
 Já a concentração emocional mostra uma leve inclinação para valores mais altos,
-sugerindo que muitos hinos são dominados por uma ou poucas emoções principais. A média de concentração é de 0.639,
-indicando que, em média, a emoção dominante representa cerca de 63.9% do total emocional do hino.
+sugerindo que muitos hinos são dominados por uma ou poucas emoções principais. A média de concentração é de {hinos_analise['concentracao_emocional'].mean():.3f},
+ou seja, em média, a emoção dominante representa cerca de {hinos_analise['concentracao_emocional'].mean() * 100:.1f}% do total emocional do hino.
 """
 
 
@@ -313,8 +310,8 @@ with col2:
     )
 
 """
-Na diversidade, pode-se notar as diferentes emoções que aparecem com scores relativamente próximos: otimismo junto com medo,
-tristeza com alegria, etc. Já na concentração, os hinos são todos fortemente dominados pela "falta de emoção" (neutral),
+Na diversidade, pode-se notar as diferentes emoções que aparecem com scores relativamente próximos: tristeza com prazer, ou
+tristeza com amor, etc. Já na concentração, os hinos são todos fortemente dominados pela "falta de emoção" (neutral),
 indicando que esses hinos são mais neutros em termos emocionais.
 """
 
@@ -366,8 +363,8 @@ fig.update_layout(
 st.plotly_chart(fig, width="stretch")
 
 """
-Pode-se observar que a maioria dos hinos (58,6%) pertence a categorias emocionais positivas, enquanto 38,7% são neutras e 
-apenas 2,6% são negativas. Isso reflete uma tendência geral de otimismo e esperança na coletânea, com poucos hinos 
+Pode-se observar que a maioria dos hinos (62,3%) pertence a categorias emocionais positivas, enquanto 33,2% são neutras e 
+apenas 4,5% são negativas. Isso reflete uma tendência geral de otimismo e esperança na coletânea, com poucos hinos 
 expressando emoções negativas.
 """
 
@@ -403,8 +400,8 @@ st.plotly_chart(fig_scatter, width="stretch")
 A visualização de relacionamento deixa ainda mais clara a positividade predominante nos hinos,
 com muitos hinos apresentando altos scores em emoções positivas e baixos em negativas -- quase uma linha horizontal, com
 score negativas próximo de zero. No entanto, é interessante notar que alguns hinos compartilham scores positivos
-e negativos moderados (exemplos: 301 -- "Quando a tristeza surgir", 132 -- "Já não estou sozinho", e 
-379 -- "Algemado por um peso"), indicando uma complexidade emocional onde sentimentos mistos são expressos.
+e negativos moderados (exemplos: 258 -- "Se tu estás tão longe", 132 -- "Já não estou sozinho", e 
+98 -- "Onde estaria eu?"), indicando uma complexidade emocional onde sentimentos mistos são expressos.
 """
 
 # Valência emocional média: 0.701
@@ -450,9 +447,9 @@ st.dataframe(
 
 """
 **Uma conclusão importante:** embora seja possível entender o motivo de alguns hinos serem classificados como negativos,
-por vezes não é tão evidente, ou até mesmo contraditório. Por vezes, pode ser uma interpretação incorreta por parte do modelo,
-como no caso do hino 322 -- "Há um amigo sempre junto", cuja emoção dominante é desapontamento ("disappointment"), 
-apesar do texto ser claramente positivo e encorajador. Isso pode ocorrer por diversos fatores, como a presença de
+nem sempre é tão evidente, podendo ser até mesmo contraditório. Por vezes, pode ser uma interpretação incorreta por parte do modelo,
+como no caso do hino 30 -- "Oh! Que precioso sange", cuja emoção dominante é tristeza ("sadness"), 
+apesar do texto ser claramente positivo. Isso pode ocorrer por diversos fatores, como a presença de
 linguagem figurada, metáforas, ou mesmo a ambiguidade inerente à linguagem humana. Portanto, é crucial interpretar esses resultados
 com cautela, considerando o contexto mais amplo dos hinos e reconhecendo as limitações e possíveis erros 
 dos modelos de análise de sentimentos.
@@ -530,8 +527,8 @@ st.dataframe(
 
 """
 É notável como pelo menos um hino de cada ranking concorda com a emoção dominante previamente identificada,
-o que colabora com a consistência dos dados analisados. "Senhor, te amo, te amo" na categoria de "amor"; o otimismo de "Assim
-como a noite espera pelo dia"; a admiração expressa em "Lindo! Lindo! Lindo!"; a alegria de quem canta "Às vezes, alguém me 
+o que colabora com a consistência dos dados analisados. "Senhor, te amo, te amo" na categoria de "amor"; o otimismo de quem "Espera no Senhor, anima-te!"; 
+a admiração expressa em "Lindo! Lindo! Lindo!"; a alegria de quem canta "Às vezes, alguém me 
 pergunta"; a tristeza antes de ver que "Uma luz brilhou em meu caminho". Esses exemplos ilustram bem como as emoções 
 são capturadas e refletidas nos hinos.
 """
@@ -739,9 +736,9 @@ with col2:
 """
 Embora seja de conhecimento geral que os hinos tendem a ser positivos, com temas de consolo e encorajamento, vemos que
 emoções negativas se fazem presentes também: o clamor contínuo em "Em tuas mãos, Senhor"; a tristeza em "Se anda triste
-o teu viver"; o medo no hino "Em me vindo o temor".
+o teu viver" e "Quando andava no mundo escravizado".
 
-Por fim, hinos com perfis emocionais balanceados, como "Quão difícil é, Senhor" e "Há um amigo sempre junto",
+Por fim, hinos com perfis emocionais balanceados, como "Eu não saberia caminhas" e "Lá onde eu não posso ver",
 demonstram uma rica tapeçaria de emoções, refletindo a complexidade da experiência humana em sua relação com o divino.
 """
 

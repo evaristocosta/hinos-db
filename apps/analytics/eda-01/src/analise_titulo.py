@@ -10,16 +10,9 @@ similarity_titles, _, _, _ = similarity_matrices()
 # separa dados de interesse
 # hinos["numero"] = hinos.index
 hinos_analise = (
-    hinos[["numero", "nome", "categoria_abr"]]
+    hinos[["numero", "nome", "subtitulo", "categoria_abr"]]
     .rename(columns={"numero": "Nº", "nome": "Nome", "categoria_abr": "Categoria"})
     .set_index("Nº")
-)
-# separa subtitulo do nome
-hinos_analise["subtitulo"] = (
-    hinos_analise["Nome"].str.extract(r"\((.*?)\)").squeeze().str.strip()
-)
-hinos_analise["Nome"] = hinos_analise["Nome"].str.replace(
-    r"\s*\(.*?\)\s*", "", regex=True
 )
 # cria dataframe comparativo, considerando o subtitulo como um nome diferente
 hinos_titulos = pd.concat(
@@ -45,7 +38,7 @@ uma vez com o título principal e outra com o subtítulo.
 O tamanho aqui, é medido em número de caracteres, considerando espaços. 
 """
 st.info(
-    "É possível usar o filtro na barra lateral para restringir a análise a categorias específicas de hinos.",
+    "É possível usar o filtro na barra lateral para restringir a análise à categorias específicas de hinos.",
     icon="ℹ️",
 )
 
@@ -71,7 +64,7 @@ with col1:
     st.markdown("**Top 10 maiores títulos**")
     st.dataframe(
         hinos_titulos[["Nome", "titulo_tam_real"]]
-        .sort_values(by="titulo_tam_real", ascending=False)
+        .sort_values(by=["titulo_tam_real", "Nome"], ascending=[False, True])
         .head(10),
         column_config={
             "titulo_tam_real": st.column_config.ProgressColumn(
@@ -90,7 +83,7 @@ with col2:
     st.markdown("**Top 10 menores títulos**")
     st.dataframe(
         hinos_titulos[["Nome", "titulo_tam_real"]]
-        .sort_values(by="titulo_tam_real")
+        .sort_values(by=["titulo_tam_real", "Nome"], ascending=[True, True])
         .head(10),
         column_config={
             "titulo_tam_real": st.column_config.ProgressColumn(
@@ -105,8 +98,9 @@ with col2:
     )
 
 
-"""
-Podemos observar que o maior título contém 46 caracteres, ocorrendo três vezes (hinos 612, 511 e 323).
+f"""
+Podemos observar que o maior título contém {hinos_titulos['titulo_tam_real'].max()} caracteres, ocorrendo 
+três vezes (hinos 323, 511 e 612).
 Já na lista dos menores títulos, vemos que menor título absoluto, com apenas quatro caracteres, é o hino 475 -- Ageu.
 """
 

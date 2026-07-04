@@ -171,10 +171,10 @@ else:
     st.altair_chart(chart)
 
 
-"""
-A média de palavras por hino é de 100.5 palavras, indicada pela linha pontilhada 
+f"""
+A média de palavras por hino é de {mean_tokens:.1f} palavras, indicada pela linha pontilhada 
 no gráfico acima. Os hinos da categoria "GRUPO DE LOUVOR" são os que apresentam maior
-média de palavras (116), enquanto que "CORINHOS" tem a menor média (45), muito embora 
+mediana de palavras (116), enquanto que "CORINHOS" tem a menor mediana (45), muito embora 
 tenha outliers que chegam a 261 palavras (Sequência de Louvores Nº 1). A categoria com maior
 variação na quantia de palavras é a de "SANTIFICAÇÃO E DERRAMAMENTO DO ESPÍRITO SANTO", com
 hinos de vão de 24 a 345 palavras, sendo este o maior hino da coletânea.
@@ -225,7 +225,8 @@ st.divider()
 
 """
 Para prosseguir com a análise textual, precisamos realizar algumas etapas de 
-pré-processamento nos dados. Isso inclui a *tokenização* e remoção de *stopwords*.
+pré-processamento nos dados. Isso inclui a *tokenização*, remoção de *stopwords*, e remoção de partes repetidas -- 
+em alguns textos, o coro aparece duas ou mais vezes, por exemplo.
 
 Uma breve explicação dos termos:
 - **Tokenização**: processo de dividir o texto em unidades menores, chamadas tokens (geralmente palavras -- similar
@@ -278,6 +279,7 @@ chart = (
             "palavra:N",
             sort=alt.EncodingSortField(field="tamanho", order="descending"),
             title="Palavra",
+            axis=alt.Axis(labelFont="Courier New"),
         ),
         tooltip=[
             alt.Tooltip("palavra:N", title="Palavra"),
@@ -358,6 +360,7 @@ else:
 
     fig.update_layout(xaxis=dict(dtick=1), bargap=0.05)
     fig.update_xaxes(tickangle=-45)
+    fig.update_yaxes(title_text="Frequência", title_standoff=10)
 
     st.plotly_chart(fig, width="stretch")
 
@@ -407,6 +410,7 @@ chart = (
             "palavra:N",
             title="Palavra",
             sort=alt.EncodingSortField(field="contagem", order="descending"),
+            axis=alt.Axis(labelFont="Courier New"),
         ),
         tooltip=[
             alt.Tooltip("palavra:N", title="Palavra"),
@@ -430,6 +434,7 @@ labels = (
         y=alt.Y(
             "palavra:N",
             sort=alt.EncodingSortField(field="contagem", order="descending"),
+            axis=alt.Axis(labelFont="Courier New"),
         ),
         text=alt.Text("contagem:Q"),
     )

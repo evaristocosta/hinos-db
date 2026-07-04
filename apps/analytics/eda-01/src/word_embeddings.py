@@ -64,6 +64,7 @@ else:
     )
     sim_filtered = sim_df.loc[selected_idx, selected_idx]
 
+sim_filtered = sim_filtered.sort_index(axis=0).sort_index(axis=1)
 fig = px.imshow(
     sim_filtered,
     x=sim_filtered.columns.astype(str),
@@ -128,7 +129,7 @@ else:
 # Diminuição de dimensionalidade: UMAP
 # Clustering: K-Means
 # Definição de clusters: silhueta - 4º melhor valor, 10 clusters
-"""
+f"""
 ## Clustering de Hinos
 
 Utilizando os embeddings de palavras, aplicamos técnicas de redução de dimensionalidade (UMAP) e clustering (K-Means) para 
@@ -138,11 +139,9 @@ onde cores diferentes representam clusters (ou grupos) distintos.
 Cada ponto representa um hino, e a proximidade entre os pontos indica similaridade semântica. Clusters próximos
 sugerem temas ou estilos comuns entre os hinos. 
 
-A definição do número de clusters foi baseada na análise de silhueta, resultando em 10 clusters que capturam bem as 
-variações nos temas dos hinos -- embora o melhor valor de silhueta tenha sido encontrado para 2 clusters, decidi 
-manter 10 clusters para uma representação mais granular e próxima da quantidade de categorias originais que existem
-na coletânea.
-
+A definição do número de clusters foi baseada na análise de silhueta, resultando em {hinos_analise['word_cluster'].nunique()} 
+clusters que capturam bem as  variações nos temas dos hinos -- embora o melhor valor de silhueta tenha sido encontrado para 3 clusters, decidi 
+manter 10 clusters para uma representação mais granular e próxima da quantidade de categorias originais que existem na coletânea.
 """
 
 fig = px.scatter(
@@ -161,11 +160,8 @@ st.plotly_chart(fig)
 """
 O agrupamento resultante permite dividir claramente os hinos em diferentes categorias. No geral, todos os hinos partilham
 de um espaço comum. No entanto, alguns clusters se destacam por sua separação mais clara, indicando temas ou estilos únicos.
-Por exemplo, os clusters 8 e 6 tem parte no espaço comum, mas também possuem áreas distintas, sugerindo que embora
+Por exemplo, os clusters 2 (temática de "rei") e 7 (temática de "vem") tem parte no espaço comum, mas também possuem áreas distintas, sugerindo que embora
 compartilhem algumas características com outros hinos, eles também possuem elementos únicos que os diferenciam. 
-O cluster 2, por outro lado, está totalmente isolado no canto superior esquerdo, indicando que os hinos nesse grupo 
-são semanticamente distintos dos demais.
-
 """
 
 # - Termos mais frequentes por cluster
@@ -202,31 +198,42 @@ st.dataframe(df_clusters)
 É notável que algumas palavras-chave, como "Senhor", "Jesus" e "Deus", aparecem frequentemente em múltiplos clusters,
 indicando sua importância central nos temas dos hinos. Como vimos em análises anteriores, essas são as palavras
 mais comuns em todo o corpus de hinos.
-
-Interessantemente, os termos relativos ao cluster 9, que está isolado no espaço UMAP, não diferem muito dos termos 
-dos outros clusters. Isso sugere que, apesar da separação visual, os hinos desse grupo compartilham semelhanças temáticas
-com os demais.
 """
 
 
-hinos_cluster2 = hinos_analise[hinos_analise["word_cluster"] == 2][
+hinos_cluster7 = hinos_analise[hinos_analise["word_cluster"] == 7][
     ["nome", "categoria_abr"]
 ].rename_axis("Nº")
 f"""
-#### Cluster 2 em perspectiva
+#### Cluster 7 em perspectiva
 
-O cluster 2 é composto por um total de {hinos_cluster2.shape[0]} hinos. A seguir, são apresentados os hinos 
-pertencentes a este cluster, que se destaca por sua separação no espaço UMAP.
-
+Para exemplificar e aprofundar a análise, vamos observar o cluster 7. 
+O cluster 7 é composto por um total de {hinos_cluster7.shape[0]} hinos. Vimos que este cluster está relacionado a temas que
+falam da volta de Jesus. A seguir, é apresentada a contagem de hinos por categoria dentro deste cluster, permitindo identificar quais 
+categorias da coletânea estão mais representadas.
 """
-
-st.dataframe(
-    hinos_cluster2, column_config={"nome": "Nome do Hino", "categoria_abr": "Categoria"}
+df_cluster7_cat = (
+    hinos_cluster7["categoria_abr"]
+    .value_counts()
+    .sort_values(ascending=True)
+    .reset_index()
 )
+df_cluster7_cat.columns = ["Categoria", "Quantidade"]
+fig = px.bar(
+    df_cluster7_cat,
+    x="Quantidade",
+    y="Categoria",
+    orientation="h",
+    labels={"Quantidade": "Quantidade de Hinos", "Categoria": "Categoria"},
+    color_discrete_sequence=["#6181a8"],
+)
+st.plotly_chart(fig)
 
-"""
-Não há uma relação óbvia entre os hinos do cluster 2 em termos de categoria, sugerindo que a separação observada no espaço UMAP
-pode ser atribuída a outros fatores semânticos ou estilísticos presentes nos textos dos hinos.
+f"""
+As duas categorias mais presentes são de "VOLTA DE JESUS E ETERNIDADE" e "SANTIFICAÇÃO E DERRAMAMENTO DO ESPÍRITO SANTO", com 17 e 
+12 hinos, respectivamente. Confirmando os dados analisados anteriormente, o cluster 7 é fortemente associado a temas de volta de Jesus,
+com {17/hinos_cluster7.shape[0]*100:.1f}% dos hinos do cluster pertencendo a essa categoria. Não obstante, podemos ainda inferir que existem
+hinos que falam sobre a volta de Jesus mas estão classificados em outras categorias da coletânea.
 """
 
 
@@ -243,7 +250,6 @@ que mostra a proporção de hinos de cada categoria dentro de cada cluster.
 ct = pd.crosstab(
     hinos_analise["categoria_abr"], hinos_analise["word_cluster"]
 ).sort_index()
-
 # Heatmap (proporções por categoria) com anotações dentro dos quadrados
 ct_counts = ct.copy()
 ct_prop = ct_counts.div(
@@ -294,8 +300,8 @@ st.plotly_chart(fig_ct)
 
 
 """
-Podemos observar que alguns clusters têm alguma associação com categorias específicas da coletânea. Por exemplo, o cluster 1 tem uma forte presença 
-de hinos da categoria "CLAMOR", enquanto o cluster 0 é dominado por hinos da categoria "INVOCAÇÃO E COMUNHÃO". No entanto, muitos clusters apresentam 
+Podemos observar que alguns clusters têm alguma associação com categorias específicas da coletânea. Por exemplo, o cluster 8 tem uma forte presença 
+de hinos da categoria "CLAMOR", enquanto o cluster 9 é dominado por hinos da categoria "SALMOS DE LOUVOR". No entanto, muitos clusters apresentam 
 uma distribuição mais diversificada de categorias, indicando que os agrupamentos baseados em embeddings de palavras não correspondem diretamente às 
 categorias pré-definidas. Isso sugere que os embeddings capturam nuances semânticas que transcendem as categorias tradicionais, refletindo a 
 complexidade dos temas abordados nos hinos.
@@ -348,8 +354,8 @@ st.dataframe(df_topics)
 """
 Diferentemente dos termos mais frequentes por cluster, os tópicos identificados pelo NMF consideram também bigramas e trigramas,
 o que pode revelar temas mais específicos e contextuais presentes nos hinos. Por exemplo, o tópico 3 está diretamente
-relacionado ao tema de "Volta de Jesus", enquanto que os tópicos 5 e 9 são de "Glória" e "Aleluia", respectivamente.
-Ainda, o tópico 6 contém termos relacionados ao clamor pelo sangue de Jesus, e o tópico 10 indica hinos de serviço e adoração.
+relacionado ao tema de "Volta de Jesus", enquanto que os tópicos 8 e 10 são de "Glória" e "Aleluia", respectivamente.
+Ainda, o tópico 5 contém termos relacionados ao clamor pelo sangue de Jesus, e o tópico 9 indica hinos de serviço e adoração.
 """
 
 # - Distribuição de tópicos
@@ -378,31 +384,40 @@ Diferente dos claros agrupamentos observados com o clustering baseado em K-Means
 diretamente em clusters distintos, indicando uma sobreposição maior entre os temas dos hinos.
 
 É possível observar algumas relações, no entanto. Por exemplo, os hinos do tópico 2 aparecem na mesma região do espaço UMAP
-associada ao cluster 7, e o tópico 7 está presente em uma área próxima ao cluster 3. Mas o que chama mais atenção, é que o
-tópico 4 está fortemente concentrado na região do cluster 2, sugerindo que os hinos desse tópico compartilham características
-semânticas distintas dos demais, e similares entre si.
+associada ao cluster 7, e o tópico 6 está presente em uma área próxima ao cluster 4.
 """
 
-hinos_topico4 = hinos_analise[hinos_analise["NMF_topic"] == 4][
+hinos_topico2 = hinos_analise[hinos_analise["NMF_topic"] == 2][
     ["nome", "categoria_abr"]
 ].rename_axis("Nº")
 
 f"""
-#### Hinos do Tópico 4
+#### Hinos do Tópico 2
 
-O tópico 4 é composto por um total de {hinos_topico4.shape[0]} hinos, mais do que o cluster 2 (que tem 
-{hinos_cluster2.shape[0]} hinos). A seguir, apresentamos os hinos pertencentes ao tópico 4.
+O tópico 2 é composto por um total de {hinos_topico2.shape[0]} hinos, {"mais" if hinos_topico2.shape[0] > hinos_cluster7.shape[0] else "menos"} 
+do que o cluster 7 (que tem {hinos_cluster7.shape[0]} hinos). A seguir, apresentamos as categorias a que pertencem os hinos do tópico 2.
 """
 
-st.dataframe(
-    hinos_topico4, column_config={"nome": "Nome do Hino", "categoria_abr": "Categoria"}
+df_topico2_cat = (
+    hinos_topico2["categoria_abr"]
+    .value_counts()
+    .sort_values(ascending=True)
+    .reset_index()
 )
+df_topico2_cat.columns = ["Categoria", "Quantidade"]
+fig = px.bar(
+    df_topico2_cat,
+    x="Quantidade",
+    y="Categoria",
+    orientation="h",
+    labels={"Quantidade": "Quantidade de Hinos", "Categoria": "Categoria"},
+    color_discrete_sequence=["#6181a8"],
+)
+st.plotly_chart(fig)
 
-# termos do cluster 2: glória, jesus, aleluia, sempre, senhor, deus, grande, vencendo
-# tópico 4: senhor, louvor, senhor senhor, voz, senhor deus, terra, nome, misericórdia, alma, diante
+
 """
-Observa-se que os hinos do tópico 4 abrangem diversas categorias, sendo que as mais marcantes são sobre volta de Jesus
-e louvor. Me chamou a atenção o termo "vencendo" do cluster 2, e "terra" do tópico 4, como distintivos entre os demais grupos e 
-tópicos. Talvez esses termos expliquem a separação observada no espaço UMAP do cluster 2: hinos que enfatizam
-a vitória de Jesus e a abrangência de Seu reino na terra.
+Observa-se que os hinos do tópico 2 abrangem diversas categorias, sendo que as mais marcantes são sobre volta de Jesus
+e santificação, assim como o cluster 7. No entanto, o tópico 2 inclui hinos em mais categorias do que o cluster 7, refletindo a natureza 
+mais difusa dos tópicos NMF em comparação com os clusters.
 """
