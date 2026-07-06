@@ -51,6 +51,8 @@ def hinos_processados() -> pd.DataFrame:
     hinos_processados = hinos_processados.query("coletanea_id == 1").drop(
         columns=["coletanea_id"]
     )
+    # fix: contracapa
+    # hinos_processados.rename(index={795: 0}, inplace=True)
     return hinos_processados
 
 
@@ -82,3 +84,13 @@ def similarity_matrices():
         Path(__file__).parent.parent / "assets" / "similarity_matrix_emotions.pkl"
     )
     return similarity_titles, similarity_word, similarity_sent, similarity_emocoes
+
+
+def contracapa_handler(numero: int) -> int:
+    match numero:
+        case 0:
+            return 795
+        case 795:
+            return 0
+        case _:
+            return numero

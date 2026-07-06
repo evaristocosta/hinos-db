@@ -742,48 +742,6 @@ Por fim, hinos com perfis emocionais balanceados, como "Eu não saberia caminhas
 demonstram uma rica tapeçaria de emoções, refletindo a complexidade da experiência humana em sua relação com o divino.
 """
 
-"""
-### Hinos mais semelhantes emocionalmente
-
-A seguir, selecione um hino para ver os mais semelhantes com base no perfil emocional.
-"""
-
-hinos_opcoes = [f"{num} - {row['nome']}" for num, row in hinos_analise.iterrows()]
-hino_selecionado = st.selectbox(
-    "Pesquisar hino (número ou nome)",
-    options=hinos_opcoes,
-    placeholder="Digite para buscar...",
-    index=None,
-    help="Digite o número ou parte do nome do hino para pesquisar",
-)
-if hino_selecionado:
-    hymn_num = int(hino_selecionado.split(" - ")[0])
-    hymn_name = hinos_analise.loc[hymn_num, "nome"]
-
-    st.metric(label="🎵 Hino", value=f"{hymn_num} — {hymn_name}")
-
-    f"""
-    **Emocoes principais:** {', '.join([f'{k}({v:.2f})' for k, v in sorted(hinos_analise.loc[hymn_num, 'emocoes'].items(), key=lambda x: x[1], reverse=True)[:3]])}
-    """
-
-    similarities = list(enumerate(similarity_emocoes.iloc[hymn_num]))
-    similarities = sorted(similarities, key=lambda x: x[1], reverse=True)
-
-    rows = []
-    for idx, score in similarities[1:11]:
-        rows.append(
-            {
-                "Hino": int(idx),
-                "Nome": hinos_analise["nome"].iloc[idx],
-                "Similaridade": float(score),
-            }
-        )
-    df_sim = pd.DataFrame(rows).set_index("Hino")
-    st.dataframe(df_sim.style.format({"Similaridade": "{:.3f}"}))
-else:
-    st.info("Selecione um hino acima para ver os mais semelhantes emocionalmente.")
-
-
 # resumo emocional
 """
 ## Resumo Emocional da Coletânea
@@ -829,3 +787,44 @@ A emoção mais comum é "amor", refletindo temas de afeto e compaixão. A categ
 sugerindo que a maioria dos hinos visa inspirar esperança e alegria. A intensidade e diversidade emocionais médias indicam 
 que os hinos são emocionalmente ricos, expressando uma ampla gama de sentimentos de maneira significativa.
 """
+
+"""
+### Hinos mais semelhantes emocionalmente
+
+A seguir, selecione um hino para ver os mais semelhantes com base no perfil emocional.
+"""
+
+hinos_opcoes = [f"{num} - {row['nome']}" for num, row in hinos_analise.iterrows()]
+hino_selecionado = st.selectbox(
+    "Pesquisar hino (número ou nome)",
+    options=hinos_opcoes,
+    placeholder="Digite para buscar...",
+    index=None,
+    help="Digite o número ou parte do nome do hino para pesquisar",
+)
+if hino_selecionado:
+    hymn_num = int(hino_selecionado.split(" - ")[0])
+    hymn_name = hinos_analise.loc[hymn_num, "nome"]
+
+    st.metric(label="🎵 Hino", value=f"{hymn_num} — {hymn_name}")
+
+    f"""
+    **Emocoes principais:** {', '.join([f'{k}({v:.2f})' for k, v in sorted(hinos_analise.loc[hymn_num, 'emocoes'].items(), key=lambda x: x[1], reverse=True)[:3]])}
+    """
+
+    similarities = list(enumerate(similarity_emocoes.loc[hymn_num]))
+    similarities = sorted(similarities, key=lambda x: x[1], reverse=True)
+
+    rows = []
+    for idx, score in similarities[1:11]:
+        rows.append(
+            {
+                "Hino": int(idx),
+                "Nome": hinos_analise["nome"].iloc[idx],
+                "Similaridade": float(score),
+            }
+        )
+    df_sim = pd.DataFrame(rows).set_index("Hino")
+    st.dataframe(df_sim.style.format({"Similaridade": "{:.3f}"}))
+else:
+    st.info("Selecione um hino acima para ver os mais semelhantes emocionalmente.")

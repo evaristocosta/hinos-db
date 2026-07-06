@@ -108,7 +108,7 @@ if hino_selecionado:
 
     st.metric(label="🎵 Hino", value=f"{hymn_num} — {hymn_name}")
 
-    similarities_tfidf = list(enumerate(similarity_word.iloc[hymn_num]))
+    similarities_tfidf = list(enumerate(similarity_word.loc[hymn_num]))
     similarities_tfidf = sorted(similarities_tfidf, key=lambda x: x[1], reverse=True)
 
     rows = []
@@ -116,7 +116,7 @@ if hino_selecionado:
         rows.append(
             {
                 "Hino": int(idx),
-                "Nome": hinos_analise["nome"].iloc[idx],
+                "Nome": hinos_analise["nome"].loc[idx],
                 "Similaridade": float(score),
             }
         )

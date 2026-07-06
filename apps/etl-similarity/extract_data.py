@@ -41,7 +41,8 @@ def extract(coletanea_id: int | None = None) -> pd.DataFrame:
     hinos_analise = (
         hinos_analise.drop(columns=["numero"])
         .rename(columns={"numero_int": "numero"})
-        .sort_values("numero")
+        .sort_values(["numero", "nome"])
+        .reset_index(drop=True)
     )
 
     return hinos_analise

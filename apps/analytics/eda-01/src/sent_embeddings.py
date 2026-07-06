@@ -195,7 +195,7 @@ if hino_selecionado:
 
     st.metric(label="🎵 Hino", value=f"{hymn_num} — {hymn_name}")
 
-    similarities = list(enumerate(similarity_sentence.iloc[hymn_num]))
+    similarities = list(enumerate(similarity_sentence.loc[hymn_num]))
     similarities = sorted(similarities, key=lambda x: x[1], reverse=True)
 
     results = [

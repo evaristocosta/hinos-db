@@ -3,7 +3,6 @@ import pandas as pd
 from src.loader import hinos_processados, similarity_matrices
 from topsis_hamedbaziyad import TOPSIS
 
-
 #    TOPSIS (eda1_part6):
 
 st.title("✅ Seleção de similares")

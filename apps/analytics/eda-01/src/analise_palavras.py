@@ -1,7 +1,7 @@
 import streamlit as st
 import nltk
 import pandas as pd
-from src.loader import hinos_processados
+from src.loader import hinos_processados, contracapa_handler
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -254,7 +254,7 @@ if hino_selecionado:
 
     with col2:
         st.markdown("**Termos mais relevantes (TF-IDF)**")
-        row = X_tfidf[hymn_num].toarray().ravel()
+        row = X_tfidf[contracapa_handler(hymn_num)].toarray().ravel()
         top_terms = top_terms_for_hymn(row, features, top_n=5)
         df_top = pd.DataFrame(top_terms, columns=["Termo", "Score"])
         df_top["Score"] = df_top["Score"].round(3)
