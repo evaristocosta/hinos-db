@@ -357,106 +357,106 @@ para definir as categorias da coletânea podem ser diferentes dos aspectos semâ
 """
 
 # Obtenção de tópicos: BERTopic(embedding_model=model)
-"""
-## Tópicos comuns entre os hinos
+# """
+# ## Tópicos comuns entre os hinos
 
-Usando a técnica BERTopic, identificamos tópicos comuns entre os hinos com base nos embeddings de frases. Cada tópico é representado 
-por um conjunto de palavras-chave que capturam o tema central dos hinos associados a esse tópico. Os tópicos não estão relacionados 
-com os clusters anteriores, mas sim com temas semânticos extraídos dos textos dos hinos.
+# Usando a técnica BERTopic, identificamos tópicos comuns entre os hinos com base nos embeddings de frases. Cada tópico é representado
+# por um conjunto de palavras-chave que capturam o tema central dos hinos associados a esse tópico. Os tópicos não estão relacionados
+# com os clusters anteriores, mas sim com temas semânticos extraídos dos textos dos hinos.
 
-"""
+# """
 
-topics = {
-    0: ["amor", "me", "meu", "eu", "que", "em", "senhor", "mim", "quero", "teu"],
-    1: ["glória", "de", "jesus", "que", "vem", "os", "com", "senhor", "santo", "rei"],
-    2: ["eu", "que", "jesus", "cristo", "céu", "de", "me", "meu", "com", "dia"],
-    3: ["que", "no", "ele", "de", "jesus", "deus", "na", "com", "do", "se"],
-    4: [
-        "senhor",
-        "teu",
-        "nos",
-        "nosso",
-        "nós",
-        "nossa",
-        "tua",
-        "vidas",
-        "louvor",
-        "te",
-    ],
-    5: ["ti", "mim", "tu", "és", "minha", "meu", "de", "senhor", "em", "vem"],
-    6: ["eu", "de", "meu", "hei", "ao", "do", "que", "ver", "me", "terra"],
-    7: [
-        "tais",
-        "que",
-        "dos",
-        "sossegai",
-        "um",
-        "nos",
-        "cristo",
-        "senhor",
-        "jesus",
-        "deixa",
-    ],
-    8: ["sangue", "teu", "mim", "estendeu", "me", "para", "mão", "em", "sem", "senhor"],
-    9: [
-        "louvai",
-        "senhor",
-        "jerusalém",
-        "aleluia",
-        "do",
-        "ao",
-        "nome",
-        "amém",
-        "dos",
-        "seja",
-    ],
-}
+# topics = {
+#     0: ["amor", "me", "meu", "eu", "que", "em", "senhor", "mim", "quero", "teu"],
+#     1: ["glória", "de", "jesus", "que", "vem", "os", "com", "senhor", "santo", "rei"],
+#     2: ["eu", "que", "jesus", "cristo", "céu", "de", "me", "meu", "com", "dia"],
+#     3: ["que", "no", "ele", "de", "jesus", "deus", "na", "com", "do", "se"],
+#     4: [
+#         "senhor",
+#         "teu",
+#         "nos",
+#         "nosso",
+#         "nós",
+#         "nossa",
+#         "tua",
+#         "vidas",
+#         "louvor",
+#         "te",
+#     ],
+#     5: ["ti", "mim", "tu", "és", "minha", "meu", "de", "senhor", "em", "vem"],
+#     6: ["eu", "de", "meu", "hei", "ao", "do", "que", "ver", "me", "terra"],
+#     7: [
+#         "tais",
+#         "que",
+#         "dos",
+#         "sossegai",
+#         "um",
+#         "nos",
+#         "cristo",
+#         "senhor",
+#         "jesus",
+#         "deixa",
+#     ],
+#     8: ["sangue", "teu", "mim", "estendeu", "me", "para", "mão", "em", "sem", "senhor"],
+#     9: [
+#         "louvai",
+#         "senhor",
+#         "jerusalém",
+#         "aleluia",
+#         "do",
+#         "ao",
+#         "nome",
+#         "amém",
+#         "dos",
+#         "seja",
+#     ],
+# }
 
-rows = [
-    {"Tópico": f"{k}", "Palavras-chave": ", ".join(v)}
-    for k, v in sorted(topics.items())
-]
-df_topics = pd.DataFrame(rows).set_index("Tópico")
+# rows = [
+#     {"Tópico": f"{k}", "Palavras-chave": ", ".join(v)}
+#     for k, v in sorted(topics.items())
+# ]
+# df_topics = pd.DataFrame(rows).set_index("Tópico")
 
-st.table(df_topics)
+# st.table(df_topics)
 
-"""
-Aqui podemos ver uma maior presença de stopwords entre os termos mais frequentes de cada tópico, o que é esperado
-já que os embeddings de frases consideram o texto completo dos hinos, incluindo essas palavras. No entanto, mesmo com a presença de stopwords, 
-os tópicos ainda refletem temas centrais da coletânea. Um tópico que me chamou a atenção foi o 7, que inclui o termo "sossegai", um termo 
-incomum na coletânea, provavelmente relacionado a um único hino: 310 - Mestre, o mar se revolta.
-"""
+# """
+# Aqui podemos ver uma maior presença de stopwords entre os termos mais frequentes de cada tópico, o que é esperado
+# já que os embeddings de frases consideram o texto completo dos hinos, incluindo essas palavras. No entanto, mesmo com a presença de stopwords,
+# os tópicos ainda refletem temas centrais da coletânea. Um tópico que me chamou a atenção foi o 7, que inclui o termo "sossegai", um termo
+# incomum na coletânea, provavelmente relacionado a um único hino: 310 - Mestre, o mar se revolta.
+# """
 
-# - Distribuição de tópicos
-"""
-### Distribuição de Tópicos nos Hinos
+# # - Distribuição de tópicos
+# """
+# ### Distribuição de Tópicos nos Hinos
 
-Utilizando os tópicos identificados pelo BERTopic, visualizamos a distribuição dos hinos em relação a esses tópicos. Vários pontos
-estão marcados com valor igual a -1: isso indica que esses hinos não foram atribuídos a nenhum tópico específico pelo modelo,
-sendo considerados "outliers" ou hinos que não se encaixam bem em nenhum dos tópicos identificados.
+# Utilizando os tópicos identificados pelo BERTopic, visualizamos a distribuição dos hinos em relação a esses tópicos. Vários pontos
+# estão marcados com valor igual a -1: isso indica que esses hinos não foram atribuídos a nenhum tópico específico pelo modelo,
+# sendo considerados "outliers" ou hinos que não se encaixam bem em nenhum dos tópicos identificados.
 
-"""
-st.info(
-    "Na legenda do gráfico, é possível clicar no tópico -1 para ocultar esses pontos e melhorar a visualização."
-)
+# """
+# st.info(
+#     "Na legenda do gráfico, é possível clicar no tópico -1 para ocultar esses pontos e melhorar a visualização."
+# )
 
-fig = px.scatter(
-    hinos_analise,
-    x="sent_umap1",
-    y="sent_umap2",
-    color="BERT_topic",
-    hover_data=["nome"],
-    labels={"sent_umap1": "", "sent_umap2": "", "BERT_topic": "Tópico BERT"},
-    width=600,
-    height=600,
-)
-st.plotly_chart(fig)
+# fig = px.scatter(
+#     hinos_analise,
+#     x="sent_umap1",
+#     y="sent_umap2",
+#     color="BERT_topic",
+#     hover_data=["nome"],
+#     labels={"sent_umap1": "", "sent_umap2": "", "BERT_topic": "Tópico BERT"},
+#     width=600,
+#     height=600,
+# )
+# st.plotly_chart(fig)
 
-"""
-Interessantemente, podemos observar agrupamentos definidos para alguns tópicos, diferente do resultado da análise de tópicos para embeddings
-de palavras. Inclusive, concordam com os agrupamentos vistos nos clusters de embeddings de frases. Por exemplo, o tópico 1, relacionado a "glória" e "santo",
-está fortemente associado aos clusters 2 e 3, que também destacam esses termos. Da mesma forma, o tópico 2, centrado em "Jesus", "Cristo" e "céu", corresponde ao cluster 8,
-que também enfatiza esses temas. Essa concordância sugere que os tópicos extraídos pelos embeddings de frases capturam aspectos semânticos semelhantes aos
-identificados pelos clusters, reforçando a validade dos agrupamentos observados.
+# """
+# Interessantemente, podemos observar agrupamentos definidos para alguns tópicos, diferente do resultado da análise de tópicos para embeddings
+# de palavras. Inclusive, concordam com os agrupamentos vistos nos clusters de embeddings de frases. Por exemplo, o tópico 1, relacionado a "glória" e "santo",
+# está fortemente associado aos clusters 2 e 3, que também destacam esses termos. Da mesma forma, o tópico 2, centrado em "Jesus", "Cristo" e "céu", corresponde ao cluster 8,
+# que também enfatiza esses temas. Essa concordância sugere que os tópicos extraídos pelos embeddings de frases capturam aspectos semânticos semelhantes aos
+# identificados pelos clusters, reforçando a validade dos agrupamentos observados.
 
-"""
+# """

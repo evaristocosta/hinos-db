@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from src.loader import hinos_processados, similarity_matrices
+from src.loader import hinos_processados, similarity_matrices, contracapa_handler
 from topsis_hamedbaziyad import TOPSIS
 
 #    TOPSIS (eda1_part6):
@@ -355,7 +355,8 @@ hinos_restantes = hinos_restantes[
 ]
 
 similarity_matrix_titles_sample = similarity_titles.loc[
-    hino_sample.name, hinos_restantes.index
+    contracapa_handler(hino_sample.name),
+    [contracapa_handler(hino) for hino in hinos_restantes.index],
 ]
 similarity_matrix_words_sample = similarity_word.loc[
     hino_sample.name, hinos_restantes.index
