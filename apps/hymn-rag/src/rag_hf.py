@@ -3,6 +3,7 @@
 Sistema RAG adaptado para usar Hugging Face Inference API
 Usa vectorstore e chunks pré-calculados do repositório
 """
+
 import os
 import sqlite3
 import pickle
@@ -20,9 +21,12 @@ from langchain_community.retrievers import BM25Retriever
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-from src.fetch_bible import extract_bible_refs, fetch_bible_verses
+from src.fetch_bible import (
+    extract_bible_refs,
+    fetch_bible_verses,
+    fetch_bible_verses_bibliaapi,
+)
 from src.extract_categories import extract_filters_deterministic
-
 
 # ===== CONFIGURAÇÕES =====
 # Modelo de embeddings local (usa sentence-transformers)
@@ -369,7 +373,7 @@ class HymnRAG:
         """Consulta com streaming de resposta - retorna (docs, generator)"""
         # Extrai referências bíblicas
         bible_refs = extract_bible_refs(question)
-        bible_context = fetch_bible_verses(bible_refs) if bible_refs else ""
+        bible_context = fetch_bible_verses_bibliaapi(bible_refs) if bible_refs else ""
 
         if self.verbose and bible_refs:
             print(f"📖 Referências bíblicas: {bible_refs}")

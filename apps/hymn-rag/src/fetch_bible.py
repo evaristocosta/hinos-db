@@ -120,6 +120,7 @@ def extract_bible_refs(text: str) -> List[dict]:
 
 
 def fetch_bible_verses(refs: List[dict], max_chars: int = 1200) -> str:
+    """Busca versículos usando a API abibliadigital.com.br."""
     verses = []
     total_len = 0
     for ref in refs:
@@ -142,6 +143,86 @@ def fetch_bible_verses(refs: List[dict], max_chars: int = 1200) -> str:
                 verses_data = data.get("verses", [])
                 text_parts = [v.get("text", "").strip() for v in verses_data]
                 verse_text = " ".join([t for t in text_parts if t])
+
+            if not verse_text:
+                continue
+
+            if len(verse_text) > 800:
+                verse_text = verse_text[:800] + "..."
+
+            snippet = f"{ref['label']} — {verse_text}"
+            verses.append(snippet)
+            total_len += len(snippet)
+            if total_len >= max_chars:
+                break
+        except Exception:
+            continue
+
+    return "\n".join(verses)
+
+
+def fetch_bible_verses_bibliaapi(refs: List[dict], max_chars: int = 1200) -> str:
+    """
+    Método alternativo: busca versículos usando a API bibliaapi.com.br.
+
+    Endpoints usados:
+      - Capítulo: GET /versions/acf/books/{book}/chapters/{chapter}
+      - Versículo: GET /versions/acf/books/{book}/chapters/{chapter}/verses/{verse}
+    """
+    base_url = "https://bibliaapi.com.br/api/v2"
+    token = os.getenv("BIBLIAAPI_API_KEY") or os.getenv("ABIBLIADIGITAL_API_TOKEN")
+
+    verses = []
+    total_len = 0
+
+    for ref in refs:
+        try:
+            # api_ref tem formato "livro/capitulo" ou "livro/capitulo/versiculo"
+            parts = ref["api_ref"].split("/")
+            if len(parts) < 2:
+                continue
+
+            book_slug = parts[0]
+            chapter = parts[1]
+            verse = parts[2] if len(parts) > 2 else None
+
+            is_chapter = ref.get("type") == "chapter"
+
+            if verse and not is_chapter:
+                # Versículo específico
+                url = f"{base_url}/versions/acf/books/{book_slug}/chapters/{chapter}/verses/{verse}"
+            else:
+                # Capítulo completo
+                url = f"{base_url}/versions/acf/books/{book_slug}/chapters/{chapter}"
+
+            resp = requests.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=8,
+            )
+
+            if resp.status_code != 200:
+                continue
+
+            data = resp.json()
+
+            # A resposta pode vir direta ou envelopada em "data"
+            payload = data.get("data", data)
+
+            if is_chapter or verse is None:
+                # Capítulo completo → extrair todos os versículos
+                verses_raw = payload.get("verses", [])
+                if not verses_raw and isinstance(payload, list):
+                    verses_raw = payload
+                text_parts = []
+                for v in verses_raw:
+                    txt = v.get("text", "").strip()
+                    if txt:
+                        text_parts.append(txt)
+                verse_text = " ".join(text_parts)
+            else:
+                # Versículo único
+                verse_text = payload.get("text", "").strip()
 
             if not verse_text:
                 continue

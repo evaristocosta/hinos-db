@@ -2,6 +2,7 @@
 """
 Aplicação Streamlit para busca de hinos usando RAG
 """
+
 import streamlit as st
 from pathlib import Path
 import sys
@@ -132,15 +133,13 @@ with st.sidebar:
     # Exemplos
     st.markdown("---")
     st.subheader("💡 Exemplos de consulta")
-    st.markdown(
-        """
+    st.markdown("""
     - Hinos sobre unidade
     - Louvores para visita em lar de idosos
     - Hinos que combinam com Isaías 43:2
     - Músicas sobre a volta de Jesus
     - Hinos de consolo
-    """
-    )
+    """)
 
 # Área principal
 col1, col2 = st.columns([3, 1])
@@ -155,15 +154,13 @@ with col1:
 with col2:
     search_button = st.button("🔍 Buscar", type="primary", use_container_width=True)
 
-st.expander("ℹ️ Instruções", expanded=False).markdown(
-    """
+st.expander("ℹ️ Instruções", expanded=False).markdown("""
 Imagine que você está fazendo uma pergunta a um assistente virtual que tem acesso aos hinos da Igreja Cristã
 Maranata, inclusive de crianças e avulsos. A resposta será de sugestões de hinos que melhor respondem à sua consulta.
 Importante:
 - Se quiser usar uma referência bíblica, não precisa colocar o texto inteiro, apenas a referência (ex: João 3:16);
 - Você pode aplicar filtros manuais na barra lateral, escolhendo categorias e coletâneas específicas.
-"""
-)
+""")
 
 # Área de resultados
 if search_button:
@@ -299,7 +296,8 @@ st.markdown(
     """
 <div style="text-align: center; color: #666; font-size: 0.9rem;">
     Desenvolvido com ❤️ por <a href="https://github.com/evaristocosta" target="_blank">Lucas Costa</a> 
-    usando Streamlit, <a href="https://www.abibliadigital.com.br/" target="_blank">ABibliaDigital</a> e Hugging Face
+    usando Streamlit, <a href="https://www.abibliadigital.com.br/" target="_blank">ABibliaDigital</a>,
+    <a href="https://bibliaapi.com.br" target="_blank">BIBLIAAPI</a> e Hugging Face
 </div>
 """,
     unsafe_allow_html=True,
