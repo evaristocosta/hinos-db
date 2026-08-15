@@ -48,56 +48,136 @@ BM25_K = 15
 class HymnRAG:
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
-        self.db_path = self._locate_database()
+        print("🚀 [DEBUG] Iniciando HymnRAG.__init__()...")
+
+        # --------------------------------------------------
+        # 1. Localiza banco de dados
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 1/8: Localizando database...")
+        try:
+            self.db_path = self._locate_database()
+            print(f"  ✓ database encontrado em: {self.db_path}")
+        except Exception as e:
+            print(f"  ❌ [ERRO] Falha ao localizar database: {type(e).__name__}: {e}")
+            raise
+
         self.vector_dir = Path(__file__).parent.parent / "assets" / "vectorstore"
         self.chunks_cache = Path(__file__).parent.parent / "assets" / "chunks_cache.pkl"
         self.stopwords_path = (
             Path(__file__).parent.parent / "assets" / "stopwords-br.txt"
         )
+        print(f"  ✓ vector_dir: {self.vector_dir}")
+        print(f"  ✓ chunks_cache: {self.chunks_cache}")
+        print(f"  ✓ stopwords_path: {self.stopwords_path}")
 
-        # Carrega configurações do banco
-        self._load_metadata()
+        # --------------------------------------------------
+        # 2. Carrega metadados do banco
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 2/8: Carregando metadados...")
+        try:
+            self._load_metadata()
+            print("  ✓ Metadados carregados com sucesso")
+        except Exception as e:
+            print(f"  ❌ [ERRO] Falha em _load_metadata: {type(e).__name__}: {e}")
+            raise
 
-        # Inicializa embeddings locais com configurações otimizadas
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=HF_EMBED_MODEL,
-            model_kwargs={
-                "device": "cpu",
-                "trust_remote_code": True,
-            },
-            encode_kwargs={
-                "normalize_embeddings": True,
-                "batch_size": 16,  # Reduz uso de memória durante encoding
-            },
-        )
+        # --------------------------------------------------
+        # 3. Inicializa embeddings locais
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 3/8: Inicializando HuggingFaceEmbeddings...")
+        try:
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=HF_EMBED_MODEL,
+                model_kwargs={
+                    "device": "cpu",
+                    "trust_remote_code": True,
+                },
+                encode_kwargs={
+                    "normalize_embeddings": True,
+                    "batch_size": 16,  # Reduz uso de memória durante encoding
+                },
+            )
+            print(f"  ✓ Embeddings inicializados com modelo: {HF_EMBED_MODEL}")
+        except Exception as e:
+            print(
+                f"  ❌ [ERRO] Falha ao inicializar embeddings: {type(e).__name__}: {e}"
+            )
+            raise
 
-        # Tenta obter o token do Streamlit secrets primeiro, depois do .env
+        # --------------------------------------------------
+        # 4. Obtém token HF (Streamlit secrets → .env)
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 4/8: Obtendo HuggingFace API token...")
         self.hf_token = None
         try:
             import streamlit as st
 
             if hasattr(st, "secrets"):
                 self.hf_token = st.secrets.get("HUGGINGFACE_API_TOKEN")
-        except:
-            pass
+                if self.hf_token:
+                    print("  ✓ Token obtido via Streamlit secrets")
+        except ImportError:
+            print("  ℹ️  streamlit não disponível, tentando variável de ambiente...")
+        except Exception as e:
+            print(f"  ⚠️  Erro ao acessar Streamlit secrets: {e}")
 
         if not self.hf_token:
+            print("  🔑 Tentando HUGGINGFACE_API_TOKEN do ambiente...")
             self.hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
+            if self.hf_token:
+                print("  ✓ Token obtido via variável de ambiente")
+            else:
+                print(
+                    "  ⚠️  HUGGINGFACE_API_TOKEN não encontrado. Configure como variável de ambiente ou Streamlit secret."
+                )
 
-        if not self.hf_token:
+        # --------------------------------------------------
+        # 5. Inicializa InferenceClient
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 5/8: Criando InferenceClient...")
+        try:
+            self.hf_client = InferenceClient(token=self.hf_token)
+            print("  ✓ InferenceClient criado com sucesso")
+        except Exception as e:
             print(
-                "⚠️ HUGGINGFACE_API_TOKEN não encontrado. Configure como variável de ambiente ou Streamlit secret."
+                f"  ❌ [ERRO] Falha ao criar InferenceClient: {type(e).__name__}: {e}"
             )
+            raise
 
-        # Inicializa InferenceClient
-        self.hf_client = InferenceClient(token=self.hf_token)
+        # --------------------------------------------------
+        # 6. Carrega chunks
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 6/8: Carregando chunks do cache...")
+        try:
+            self.chunks = self._load_chunks()
+            print(f"  ✓ {len(self.chunks)} chunks carregados")
+        except Exception as e:
+            print(f"  ❌ [ERRO] Falha ao carregar chunks: {type(e).__name__}: {e}")
+            raise
 
-        # Carrega chunks e vectorstore PRÉ-CALCULADOS
-        self.chunks = self._load_chunks()
-        self.vectorstore = self._load_vectorstore()
+        # --------------------------------------------------
+        # 7. Carrega vectorstore
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 7/8: Carregando vectorstore...")
+        try:
+            self.vectorstore = self._load_vectorstore()
+            print("  ✓ Vectorstore carregado com sucesso")
+        except Exception as e:
+            print(f"  ❌ [ERRO] Falha ao carregar vectorstore: {type(e).__name__}: {e}")
+            raise
 
-        # Configura retrievers
-        self._setup_retrievers()
+        # --------------------------------------------------
+        # 8. Configura retrievers
+        # --------------------------------------------------
+        print("🔍 [DEBUG] Passo 8/8: Configurando retrievers...")
+        try:
+            self._setup_retrievers()
+            print("  ✓ Retrievers configurados com sucesso")
+        except Exception as e:
+            print(
+                f"  ❌ [ERRO] Falha ao configurar retrievers: {type(e).__name__}: {e}"
+            )
+            raise
 
         # BM25 será inicializado sob demanda (lazy loading)
         self._bm25_initialized = False
@@ -122,17 +202,41 @@ class HymnRAG:
         return db_path
 
     def _load_metadata(self):
+        if self.verbose:
+            print(f"  📂 Conectando ao banco: {self.db_path}")
+
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
 
             cur.execute("SELECT count(*) FROM hino")
             self.total_hinos = cur.fetchone()[0]
+            print(f"  📊 Total de hinos: {self.total_hinos}")
 
-            cur.execute("SELECT id, descricao FROM categoria")
-            self.categorias = {row[1].lower(): row[0] for row in cur.fetchall()}
+            cur.execute("SELECT id, nome as descricao FROM categoria")
+            rows_cat = cur.fetchall()
+            self.categorias = {}
+            for row in rows_cat:
+                cat_id, cat_desc = row
+                if cat_desc is None:
+                    print(
+                        f"  ⚠️  [DEBUG] Categoria ID {cat_id} tem 'descricao' = None! Ignorando."
+                    )
+                    continue
+                self.categorias[cat_desc.lower()] = cat_id
+            print(f"  📂 {len(self.categorias)} categorias carregadas")
 
             cur.execute("SELECT id, nome FROM coletanea")
-            self.coletaneas = {row[1].lower(): row[0] for row in cur.fetchall()}
+            rows_col = cur.fetchall()
+            self.coletaneas = {}
+            for row in rows_col:
+                col_id, col_nome = row
+                if col_nome is None:
+                    print(
+                        f"  ⚠️  [DEBUG] Coletânea ID {col_id} tem 'nome' = None! Ignorando."
+                    )
+                    continue
+                self.coletaneas[col_nome.lower()] = col_id
+            print(f"  📂 {len(self.coletaneas)} coletâneas carregadas")
 
         if self.verbose:
             print(f"📊 Total de hinos: {self.total_hinos}")

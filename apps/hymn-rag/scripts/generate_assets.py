@@ -3,6 +3,7 @@
 Script para gerar assets do sistema RAG (vectorstore e chunks cache)
 Uso: python generate_assets.py [--verbose] [--force]
 """
+
 import argparse
 import sqlite3
 import pickle
@@ -15,7 +16,6 @@ from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from tqdm import tqdm
-
 
 # ===== CONFIGURAÇÕES =====
 # Modelo de embeddings (sentence-transformers via HuggingFace - compatível com cloud)
@@ -47,15 +47,13 @@ def load_hymns_from_db(db_path: Path, verbose: bool = False) -> List[Document]:
 
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT id, nome, numero, texto_limpo AS texto, 
+        cur.execute("""
+            SELECT id, nome, numero, texto_processado AS texto, 
                    categoria_id, coletanea_id
             FROM hino
-            WHERE texto_limpo IS NOT NULL
+            WHERE texto_processado IS NOT NULL
             ORDER BY id
-            """
-        )
+            """)
         rows = cur.fetchall()
 
     docs = []
