@@ -1,4 +1,3 @@
-# https://dbdocs.io/lucascosta74/Hinos-DB
 Project "Hinos DB" {
   database_type: 'SQLite'
   note: '''
@@ -53,11 +52,17 @@ Table "coletanea" {
 }
 
 
-Table "hino" {
+Table "hino_coletanea" {
   "id" INT [pk, not null, increment]
-  "numero" VARCHAR(255) [note: '''
+  "hino_id" INT
+  "hino_numero" VARCHAR(255) [note: '''
     Número de acordo com a coletânea da qual faz parte (origem).
   ''']
+  "coletanea_id" INT
+}
+
+Table "hino" {
+  "id" INT [pk, not null, increment]
 
   "nome" VARCHAR(255) [not null, note: '''
     Nome ou título do hino, com subtítulo entre parênteses quando existente.
@@ -75,20 +80,23 @@ Table "hino" {
     Texto usado para impressão.
   ''']
 
-  "texto_processado" TEXT [note: '''
-    Texto do hino com tags inteligentes, como, por exemplo, de início e fim de repetições (bis).
+  "texto_limpo" TEXT [note: '''
+    Texto puro do hino, sem instruções (coro, instrumentos, repetir, bis) e sem repetições (ex.: coro que se repete múltiplas vezes aparece somente uma vez).
+  ''']
+
+  "texto_estruturado" TEXT [note: '''
+    Texto do hino com marcas inteligentes, como, por exemplo, de início e fim de repetições (bis).
   ''']
 
   "tom" VARCHAR(255)
   "texto_cifra" text [note: '''
-    Texto com marcações de localização de cifras ("|"). Proveniente de "texto" ou "texto_processado".
+    Texto com marcações de localização de cifras ("|"). Proveniente de "texto" ou "texto_estruturado".
   ''']
 
   "cifra" text [note: '''
     Lista de acordes para execução do hino. Deve ser compatível com o número de marcações ("|") em "texto_cifra".
   ''']
 
-  "coletanea_id" INT
   "categoria_id" INT
   "ano_composicao" INT
   "date_insert" DATETIME [not null]
@@ -121,4 +129,6 @@ Ref: "autor_acao"."id" < "hino_autor"."autor_acao_id"
 
 Ref: "categoria"."id" < "hino"."categoria_id"
 
-Ref: "coletanea"."id" < "hino"."coletanea_id"
+Ref: "hino_coletanea"."id" -? "hino"."id"
+
+Ref: "coletanea"."id" ?<? "hino_coletanea"."coletanea_id"

@@ -12,21 +12,22 @@ def extract(coletanea_id: int | None = None) -> pd.DataFrame:
     # Monta a query para buscar hinos e suas categorias
     where_clause = ""
     if coletanea_id is not None:
-        where_clause = f"where coletanea_id = {coletanea_id}"
+        where_clause = f"where hc.coletanea_id = {coletanea_id}"
 
     sql_query = f"""
     select
         h.id,
-        h.numero,
+        hc.hino_numero as numero,
         h.nome,
         h.texto,
         h.texto_processado,
         h.categoria_id,
-        h.coletanea_id,
+        hc.coletanea_id,
         c.nome as categoria
     from 
         hino h
         left join categoria c on c.id = h.categoria_id
+        left join hino_coletanea hc on hc.hino_id = h.id
     {where_clause}
     """
 

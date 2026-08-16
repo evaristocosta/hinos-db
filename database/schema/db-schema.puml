@@ -1,4 +1,4 @@
-@startuml db-schema
+@startuml
 hide circle
 skinparam class {
   BackgroundColor White
@@ -8,6 +8,7 @@ skinparam class {
 class autor {
   id : INTEGER <<PK>>
   nome : TEXT <<NN>>
+  nacionalidade : TEXT
 }
 
 class autor_acao {
@@ -17,26 +18,30 @@ class autor_acao {
 
 class categoria {
   id : INTEGER <<PK>>
-  descricao : TEXT <<NN>>
+  nome : TEXT <<NN>>
+  descricao : TEXT
 }
 
 class coletanea {
   id : INTEGER <<PK>>
   nome : TEXT <<NN>>
+  apelido : TEXT <<NN>>
   descricao : TEXT
   arquivo : TEXT
 }
 
 class hino {
   id : INTEGER <<PK>>
-  coletanea_id : INTEGER
-  categoria_id : INTEGER
-  numero : TEXT
   nome : TEXT <<NN>>
+  nome_pt : TEXT
+  idioma : TEXT
   texto : TEXT
   texto_processado : TEXT
-  ano_composicao : INTEGER
   tom : TEXT
+  texto_cifra : TEXT
+  cifra : TEXT
+  categoria_id : INTEGER
+  ano_composicao : INTEGER
   date_insert : DATETIME <<NN>>
   date_update : DATETIME <<NN>>
 }
@@ -48,31 +53,18 @@ class hino_autor {
   autor_acao_id : INTEGER <<NN>>
 }
 
-class hino_autor_fk {
-  hino_autor_id : INTEGER
-  autor_acao_id : INTEGER
-}
-
-class hino_de {
+class hino_coletanea {
   id : INTEGER <<PK>>
   hino_id : INTEGER <<NN>>
-  numero : INTEGER
-  nome : TEXT
-  nome_traduzido : TEXT
-  texto : TEXT
-  texto_processado : TEXT
+  hino_numero : TEXT
+  coletanea_id : INTEGER <<NN>>
 }
 
-class hino_fk {
-  hino_id : INTEGER
-  coletanea_id : INTEGER
-  categoria_id : INTEGER
-}
-
-hino_autor_fk }o--|| hino_autor : hino_autor_id
-hino_autor_fk }o--|| autor_acao : autor_acao_id
-hino_fk }o--|| categoria : categoria_id
-hino_fk }o--|| hino_de : hino_id
-hino_fk }o--|| coletanea : coletanea_id
+hino }o--|| categoria : categoria_id
+hino_autor }o--|| autor_acao : autor_acao_id
+hino_autor }o--|| hino : hino_id
+hino_autor }o--|| autor : autor_id
+hino_coletanea }o--|| coletanea : coletanea_id
+hino_coletanea }o--|| hino : hino_id
 
 @enduml

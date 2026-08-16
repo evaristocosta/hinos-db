@@ -25,7 +25,6 @@ CREATE TABLE "coletanea" (
 
 CREATE TABLE "hino" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  "numero" TEXT,
   "nome" TEXT NOT NULL,
   "nome_pt" TEXT,
   "idioma" TEXT,
@@ -34,13 +33,11 @@ CREATE TABLE "hino" (
   "tom" TEXT,
   "texto_cifra" TEXT,
   "cifra" TEXT,
-  "coletanea_id" INTEGER,
   "categoria_id" INTEGER,
   "ano_composicao" INTEGER,
   "date_insert" DATETIME NOT NULL,
   "date_update" DATETIME NOT NULL,
-  FOREIGN KEY ("categoria_id") REFERENCES "categoria" ("id"),
-  FOREIGN KEY ("coletanea_id") REFERENCES "coletanea" ("id")
+  FOREIGN KEY ("categoria_id") REFERENCES "categoria" ("id")
 );
 
 CREATE TABLE "hino_autor" (
@@ -51,4 +48,13 @@ CREATE TABLE "hino_autor" (
   FOREIGN KEY ("autor_id") REFERENCES "autor" ("id"),
   FOREIGN KEY ("hino_id") REFERENCES "hino" ("id"),
   FOREIGN KEY ("autor_acao_id") REFERENCES "autor_acao" ("id")
+);
+
+CREATE TABLE "hino_coletanea" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "hino_id" INTEGER NOT NULL,
+  "hino_numero" TEXT,
+  "coletanea_id" INTEGER NOT NULL,
+  FOREIGN KEY ("hino_id") REFERENCES "hino" ("id"),
+  FOREIGN KEY ("coletanea_id") REFERENCES "coletanea" ("id")
 );

@@ -48,11 +48,19 @@ def load_hymns_from_db(db_path: Path, verbose: bool = False) -> List[Document]:
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, nome, numero, texto_processado AS texto, 
-                   categoria_id, coletanea_id
-            FROM hino
-            WHERE texto_processado IS NOT NULL
-            ORDER BY id
+            SELECT 
+                h.id, 
+                h.nome, 
+                hc.hino_numero as numero, 
+                h.texto_processado AS texto,
+                h.categoria_id, 
+                hc.coletanea_id
+            FROM 
+                hino h
+                INNER JOIN hino_coletanea hc ON hc.hino_id = h.id
+            WHERE 
+                h.texto_processado IS NOT NULL
+            ORDER BY h.id
             """)
         rows = cur.fetchall()
 

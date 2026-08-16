@@ -36,10 +36,17 @@ entity "coletanea" as coletanea {
   **arquivo**: TEXT
 }
 
+entity "hino_coletanea" as hino_coletanea {
+  * **id**: INTEGER <<PK>>
+  --
+  **hino_numero** TEXT
+  * **hino_id**: INTEGER <<FK>>
+  * **coletanea_id**: INTEGER <<FK>>
+}
+
 entity "hino" as hino {
   * **id**: INTEGER <<PK>>
   --
-  **numero**: TEXT
   * **nome**: TEXT
   **nome_pt**: TEXT
   **idioma**: TEXT
@@ -48,7 +55,6 @@ entity "hino" as hino {
   **tom**: TEXT
   **texto_cifra**: TEXT
   **cifra**: TEXT
-  **coletanea_id**: INTEGER <<FK>>
   **categoria_id**: INTEGER <<FK>>
   **ano_composicao**: INTEGER
   * **date_insert**: TEXT
@@ -68,6 +74,7 @@ hino_autor }o--|| autor : "autor_id"
 hino_autor }o--|| hino : "hino_id"
 hino_autor }o--|| autor_acao : "autor_acao_id"
 hino }o--o| categoria : "categoria_id"
-hino }o--o| coletanea : "coletanea_id"
+hino }o--o| hino_coletanea : "hino_id"
+hino_coletanea }o--o| coletanea : "coletanea_id"
 
 @enduml

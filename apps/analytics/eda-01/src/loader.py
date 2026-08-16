@@ -26,8 +26,7 @@ def load_data() -> pd.DataFrame:
 
     sql_query = """
     select
-        h.id,
-        h.numero,
+        hc.hino_numero as numero,
         h.nome,
         h.texto,
         h.texto_processado,
@@ -36,8 +35,9 @@ def load_data() -> pd.DataFrame:
     from 
         hino h
         left join categoria c on c.id = h.categoria_id
+        left join hino_coletanea hc on hc.hino_id = h.id
     where
-        h.coletanea_id = 1 -- hinos da coletanea padrao
+        hc.coletanea_id = 1 -- hinos da coletanea padrao
     """
 
     hinos_analise = pd.read_sql_query(sql_query, connection)
