@@ -29,51 +29,53 @@ hinos-db/
 │   │       ├── streamlit_app.py # Aplicação web interativa
 │   │       ├── src/             # Código-fonte das análises
 │   │       ├── notebooks/       # Notebooks de desenvolvimento
-│   │       └── assets/          # Dados e banco de dados
-│   ├── etl-similarity/          # Pipeline de análise de similaridade
-│   │   ├── pipeline.py          # Pipeline completo
-│   │   ├── extract_data.py      # Extração do banco
-│   │   ├── similarities.py      # Cálculo de similaridades
-│   │   ├── processes.py         # Processamento NLP
-│   │   └── assets/              # Matrizes e logs
+│   │       └── assets/          # Dados e matrizes processadas
+│   ├── etl-similarity/          # Pipeline de cálculo de similaridade semântica
+│   │   ├── pipeline.py          # Execução sequencial da pipeline
+│   │   ├── extract_data.py      # Extração dos dados do banco
+│   │   ├── similarities.py      # Funções de cálculo de similaridade
+│   │   ├── processes.py         # Processamento de NLP e embeddings
+│   │   ├── config.py            # Modelos e parâmetros configuráveis
+│   │   └── assets/              # Matrizes geradas e logs de execução
 │   ├── etl-slides/              # Pipeline ETL para slides PowerPoint
-│   │   ├── pipeline.py          # Pipeline completo
-│   │   ├── pptx2txt.py          # Extrator de texto
-│   │   ├── txt2json.py          # Conversor texto → JSON
-│   │   ├── json2sql.py          # Conversor JSON → SQL
-│   │   └── slides_adapt/        # Slides processados
-│   ├── hymn-importer/           # Importação de novos hinos
-│   │   ├── pipeline.ipynb       # Pipeline de adição
-│   │   └── arquivos_hinos/      # Arquivos em Markdown
-│   ├── hymn-rag/                # 🔍 Sistema de busca inteligente
-│   │   ├── streamlit_app.py     # App de busca com RAG
-│   │   ├── src/                 # Lógica do sistema RAG
-│   │   └── assets/              # Índices e embeddings
-│   └── shared/                  # Código compartilhado
-│       ├── assets/              # Assets comuns
-│       ├── models/              # Modelos compartilhados
-│       ├── rag/                 # Utilitários RAG
-│       └── similarity/          # Utilitários de similaridade
-├── database/                    # Banco de dados e migrações
-│   ├── migrations/              # Scripts SQL de migração
-│   ├── schema/                  # Esquemas do banco
-│   └── run_migrations.py        # Executor de migrações
-├── docs/                        # Documentação adicional
-├── requirements.txt             # Dependências Python
-├── WARP.md                      # Guia para WARP terminal
+│   │   ├── pptx2txt.py          # Extrator PPTX → TXT
+│   │   ├── txt2json.py          # Conversor TXT → JSON estruturado
+│   │   └── json2sql.py          # Conversor JSON → Migrações SQL
+│   ├── hymn-importer/           # Importação e catalogação de novos hinos
+│   │   ├── pipeline.ipynb       # Notebook de importação
+│   │   └── arquivos_hinos/      # Letras em Markdown
+│   ├── hymn-rag/                # 🔍 Sistema de busca inteligente e RAG
+│   │   ├── streamlit_app.py     # Interface web em Streamlit
+│   │   ├── src/                 # Utilitários RAG, Bíblia e categorias
+│   │   ├── scripts/             # CLI query.py e generate_assets.py
+│   │   └── assets/              # Vectorstore (ChromaDB) e chunks em cache
+│   └── shared/                  # Módulos e modelos compartilhados
+│       ├── assets/              # Stopwords e referências comuns
+│       ├── models/              # Modelos (FastText cc.pt.300.bin)
+│       ├── rag/                 # Artefatos RAG compartilhados
+│       └── similarity/          # Matrizes de similaridade consolidadas
+├── database/                    # Banco de dados central e ferramentas
+│   ├── database.db              # Banco de dados SQLite
+│   ├── migrations/              # Migrações SQL sequenciais (001 a 012+)
+│   ├── schema/                  # Esquemas SQL, DBML e diagramas PlantUML
+│   └── tools/                   # Scripts para migrações e geração de diagramas
+├── docs/                        # Documentação complementar
+├── requirements.txt             # Dependências Python globais
+├── AGENTS.md                    # Guia para agentes de IA e desenvolvedores
 └── README.md                    # Este arquivo
 ```
 
 ## 🗄️ Estrutura do Banco de Dados
 
-O banco de dados possui as seguintes tabelas principais:
+O banco de dados SQLite (`database/database.db`) possui as seguintes tabelas principais:
 
-- **hino**: Informações principais dos hinos (título, texto, categoria, coletânea)
-- **coletanea**: Coletâneas de hinos
-- **categoria**: Categorias temáticas dos hinos
-- **autor**: Autores e compositores
-- **hino_autor**: Relação entre hinos e autores
-- **autor_acao**: Tipo de contribuição do autor (letra, melodia, etc.)
+- **hino**: Informações centrais do hino (título, texto bruto, texto processado com marcações, categoria, tom)
+- **coletanea**: Coletâneas de hinos (ex: Coletânea de Igrejas, CIAS, Avulsos)
+- **hino_coletanea**: Associação entre hino e coletânea, armazenando a numeração (`hino_numero`) em cada contexto
+- **categoria**: Classificação temática dos hinos
+- **autor**: Letristas, compositores e tradutores
+- **hino_autor**: Relação N:N entre hinos e autores
+- **autor_acao**: Tipo de contribuição do autor (letra, música, arranjo, tradução)
 
 ## 📱 Aplicações
 
@@ -111,9 +113,40 @@ cd apps/hymn-rag
 streamlit run streamlit_app.py
 ```
 
-**Nota**: Requer token do Hugging Face para usar os modelos de LLM.
+Para consultas via linha de comando ou regeneração de assets:
+
+```bash
+# Busca via CLI com streaming (usando Ollama localmente)
+python scripts/query.py "Hinos sobre consolo e encorajamento"
+
+# Regeneração do índice vetorial ChromaDB e cache de chunks
+python scripts/generate_assets.py --force
+```
 
 📚 [README detalhado](apps/hymn-rag/README.md)
+
+### ⚙️ ETL & Processamento de Dados
+
+#### 1. Pipeline de Similaridade (`apps/etl-similarity`)
+Calcula matrizes de similaridade léxica (TF-IDF), semântica (FastText & BERTimbau) e de sentimentos/emoções:
+
+```bash
+cd apps/etl-similarity
+python pipeline.py
+```
+
+#### 2. Migrações e Gerenciamento do Banco (`database/tools`)
+Aplica migrações sequenciais e reconstrói o banco SQLite e esquemas:
+
+```bash
+cd database/tools
+# Recria database.db executando todas as migrações (requer sqlite3 no PATH)
+python run_migrations.py
+
+# Atualiza arquivos de esquema (SQL e PlantUML)
+python generate_schema_sql.py
+python generate_schema_puml.py
+```
 
 ### 🚀 Projeto em Desenvolvimento
 
