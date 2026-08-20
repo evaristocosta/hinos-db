@@ -187,6 +187,9 @@ def fetch_bible_verses_bibliaapi(refs: List[dict], max_chars: int = 1200) -> str
             verse = parts[2] if len(parts) > 2 else None
 
             is_chapter = ref.get("type") == "chapter"
+            # caso especifico dessa api: "atos"
+            if book_slug == "at":
+                book_slug = "atos"
 
             if verse and not is_chapter:
                 # Versículo específico
